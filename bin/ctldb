@@ -7,7 +7,7 @@ set -x
 
 # Sanity check command line options
 usage() {
-  echo "Usage: $0 (create|modify|destroy|reset|dump)"
+  echo "Usage: $0 (create|modify|destroy|reset|dump|pokemon|coaches|matches)"
 }
 
 
@@ -51,11 +51,22 @@ case $1 in
     sqlite3 var/CTL_Bot.sqlite3 < sql/data.sql
     ;;
 
-
   "dump")
     sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM coaches'
     sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM pokemon'
     sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM schedule'
+    ;;
+
+  "pokemon")
+    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM pokemon'
+    ;;
+
+  "coaches")
+    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM coaches'
+    ;;
+
+  "matches")
+    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM matches'
     ;;
   *)
     usage

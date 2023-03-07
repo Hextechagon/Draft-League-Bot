@@ -10,11 +10,11 @@ def get_db():
     return sqlite_db
 
 def db_test():
-    team = 'Peking Pelippers'
+    team = 'Hextechagon'
     conn = get_db()
     test = conn.execute(
         """
-        INSERT INTO coaches(tname)
+        INSERT INTO coaches(user)
         VALUES (?)
         """,
         (team, )
