@@ -1,6 +1,7 @@
 import os
 import discord
 from dotenv import load_dotenv
+from discord.ext import commands
 #replace * with function names
 from helpers import db_test
 
@@ -10,18 +11,16 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-@client.event
+@bot.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
+    print(f'{bot.user.name} has connected to Discord!')
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-        db_test()
+@bot.command(name='test')
+async def testing(ctx, user: discord.Member = None):
+    response = 'Hello  ' + str(arg)
+    await ctx.send(response)
+    db_test()
 
-client.run(TOKEN)
+bot.run(TOKEN)

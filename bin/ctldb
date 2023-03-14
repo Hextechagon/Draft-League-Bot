@@ -21,52 +21,52 @@ fi
 case $1 in
   "create")
     # check if the database already exists
-    if [ -f var/CTL_Bot.sqlite3 ]; then
+    if [ -f var/CTLDL_Bot.sqlite3 ]; then
       echo "Error: database already exists"
       exit 1
     fi
     # Create the database
-    sqlite3 var/CTL_Bot.sqlite3 < sql/schema.sql
-    sqlite3 var/CTL_Bot.sqlite3 < sql/data.sql
+    sqlite3 var/CTLDL_Bot.sqlite3 < sql/schema.sql
+    sqlite3 var/CTLDL_Bot.sqlite3 < sql/data.sql
     ;;
 
 
   "modify")
     # Modify the database
-    sqlite3 var/CTL_Bot.sqlite3 < sql/change.sql
+    sqlite3 var/CTLDL_Bot.sqlite3 < sql/change.sql
     ;;
 
 
   "destroy")
     # Destroy the database
-    rm -rf var/CTL_Bot.sqlite3 
+    rm -rf var/CTLDL_Bot.sqlite3 
     ;;
 
 
   "reset")
     # Destroy the database
-    rm -rf var/CTL_Bot.sqlite3 
+    rm -rf var/CTLDL_Bot.sqlite3 
     # Create the database
-    sqlite3 var/CTL_Bot.sqlite3 < sql/schema.sql
-    sqlite3 var/CTL_Bot.sqlite3 < sql/data.sql
+    sqlite3 var/CTLDL_Bot.sqlite3 < sql/schema.sql
+    sqlite3 var/CTLDL_Bot.sqlite3 < sql/data.sql
     ;;
 
   "dump")
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM coaches'
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM pokemon'
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM schedule'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM coaches'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM pokemon'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM schedule'
     ;;
 
   "pokemon")
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM pokemon'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM pokemon'
     ;;
 
   "coaches")
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM coaches'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM coaches'
     ;;
 
   "matches")
-    sqlite3 -batch -line var/CTL_Bot.sqlite3 'SELECT * FROM matches'
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM matches'
     ;;
   *)
     usage
