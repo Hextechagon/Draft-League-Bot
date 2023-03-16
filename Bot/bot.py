@@ -17,10 +17,10 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
-@bot.command(name='test')
-async def testing(ctx, user: discord.Member = None):
-    response = 'Hello  ' + str(arg)
-    await ctx.send(response)
-    db_test()
+@bot.command()
+async def test(ctx, user: discord.Member = None):
+    response = user.id
+    await ctx.send(f'Hello <@{response}>!')
+    db_test(response)
 
 bot.run(TOKEN)

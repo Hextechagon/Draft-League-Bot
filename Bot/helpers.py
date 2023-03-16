@@ -10,14 +10,13 @@ def get_db():
     return sqlite_db
 
 def db_test(userid):
-    team = 'Hextechagon'
     conn = get_db()
     test = conn.execute(
         """
-        INSERT INTO coaches(userid )
+        INSERT INTO coaches(coachid)
         VALUES (?)
         """,
-        (team, )
+        (userid, )
     )
     conn.commit()
     conn.close()

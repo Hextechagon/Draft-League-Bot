@@ -4,14 +4,12 @@ PRAGMA foreign_keys = ON;
 --Check if user type is correct
 --test insert same userid again to see if error, if error return error message
 CREATE TABLE coaches(
-    coachid INTEGER PRIMARY KEY AUTOINCREMENT,
-    userid INTEGER NOT NULL,
-    wins INTEGER NOT NULL DEFAULT 0,
+    coachid INTEGER PRIMARY KEY,
+    wins INTEGER NOT NULL DEFAULT 0, 
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
     budget INTEGER NOT NULL DEFAULT 125, 
     tname VARCHAR(50) NOT NULL DEFAULT 'TBD'
-    UNIQUE(userid)
 );
 
 CREATE TABLE pokemon(
