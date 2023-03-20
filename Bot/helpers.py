@@ -10,16 +10,29 @@ def get_db():
     return sqlite_db
 
 def db_test(userid):
-    conn = get_db()
-    test = conn.execute(
-        """
-        INSERT INTO coaches(coachid)
-        VALUES (?)
-        """,
-        (userid, )
-    )
-    conn.commit()
-    conn.close()
-    print("Inserted!")
+    try:
+        conn = get_db()
+        test = conn.execute(
+            """
+            INSERT INTO coaches(coachid)
+            VALUES (?)
+            """,
+            (userid, )
+        )
+        conn.commit()
+        test2 = conn.execute(
+            """
+            SELECT pname 
+            FROM pokemon
+            WHERE monid < 11
+            """
+        )
+        pokemon = test2.fetchall()
+        for mon in pokemon:
+            print(mon)
+        return "Success!"
+    except:
+        return "Failure!"
+    finally:
+        conn.close()
     #trigger check in query
-    conn.close()

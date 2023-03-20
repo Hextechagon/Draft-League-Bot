@@ -19,8 +19,11 @@ async def on_ready():
 
 @bot.command()
 async def test(ctx, user: discord.Member = None):
+    # do not have to specify parameter type
     response = user.id
     await ctx.send(f'Hello <@{response}>!')
-    db_test(response)
-
+    await ctx.send(user.name)
+    message = db_test(response)
+    await ctx.send(message)
+   
 bot.run(TOKEN)
