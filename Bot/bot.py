@@ -1,9 +1,9 @@
 """Main file that listens and responds to commands.
 
 Commands include:
-!register_coach <@user>  
-!remove_coach <@user>  
-!replace_coach <@old_coach> <@new_coach>  
+!register <@user>  
+!delete <@user>  
+!replace <@old_coach> <@new_coach>  
 !draft  
 !select <pokemon_name>
 !add <pokemon_list>
@@ -15,7 +15,7 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from coach_helpers import insert_coach
+from coach_helpers import insert_coach, delete_coach
 from draft_helpers import *
 
 
@@ -34,29 +34,37 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command()
-async def register_coach(ctx, user: discord.Member):
+async def register(ctx, user: discord.Member):
     """Enter the specified server member into the draft league."""
     # code to ping user await ctx.send(f'Hello <@{user.id}>!')
-    status = insert_coach(user.id)
+    status = insert_coach(user.id, user.name)
     if status == 0:
-        await ctx.send(f'{user.name} has been registered as a coach.')
+        await ctx.send(f':ballot_box_with_check: {user.name} has been registered as a coach.')
     else:
         await ctx.send(status)
 
-@register_coach.error
-async def user_error(ctx, error):
-    if isinstance(error, commands.errors.MemberNotFound):
-        await ctx.send("Please specify a valid user.")
-
 @bot.command()
-async def remove_coach(ctx, user: discord.Member):
+async def delete(ctx, user: discord.Member):
     """Remove the specified server member from the draft league."""
-    # TODO: see comment above
+    delete_coach(user.id)
+    
+@register.error
+@delete.error
+async def reg_del_error(ctx, error):
+    """Check if the entered user is a server member."""
+    if isinstance(error, commands.errors.MemberNotFound):
+        await ctx.send(":x: Please specify a valid user.")
 
 @bot.command()
-async def replace_coach(ctx, user1: discord.Member, user2: discord.Member):
+async def replace(ctx, user1: discord.Member, user2: discord.Member):
     """Replace a current coach with the specified server member."""
     # TODO: see comment above
+
+@replace.error
+async def rep_error(ctx, error):
+    """Check if the entered user is a server member."""
+    if isinstance(error, commands.errors.MemberNotFound):
+        await ctx.send(":x: One or more of the specified users is invalid.")
 
 @bot.command()
 async def draft(ctx):
