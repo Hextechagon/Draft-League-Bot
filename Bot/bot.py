@@ -15,7 +15,7 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from coach_helpers import *
+from coach_helpers import insert_coach
 from draft_helpers import *
 
 
@@ -34,18 +34,19 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command()
-async def test(ctx, user: discord.Member):
-    """Testing (use this as a sample)."""
-    response = user.id
-    await ctx.send(f'Hello <@{response}>!')
-    await ctx.send(user.name)
-    message = db_test(response)
-    await ctx.send(message)
-
-@bot.command()
 async def register_coach(ctx, user: discord.Member):
     """Enter the specified server member into the draft league."""
-    # TODO: see comment above
+    # code to ping user await ctx.send(f'Hello <@{user.id}>!')
+    status = insert_coach(user.id)
+    if status == 0:
+        await ctx.send(f'{user.name} has been registered as a coach.')
+    else:
+        await ctx.send(status)
+
+@register_coach.error
+async def user_error(ctx, error):
+    if isinstance(error, commands.errors.MemberNotFound):
+        await ctx.send("Please specify a valid user.")
 
 @bot.command()
 async def remove_coach(ctx, user: discord.Member):

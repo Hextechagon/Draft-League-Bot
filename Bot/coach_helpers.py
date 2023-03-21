@@ -1,17 +1,11 @@
 import sqlite3
-import pathlib
+from db_conn import get_db
 
 
-def get_db():
-    root = pathlib.Path(__file__).resolve().parent.parent
-    database_file = root/'var'/'CTLDL_Bot.sqlite3'
-    sqlite_db = sqlite3.connect(str(database_file))
-    sqlite_db.execute("PRAGMA foreign_keys = ON")
-    return sqlite_db
-
-def db_test(userid):
+def insert_coach(userid):
+    """Insert the user with userid into the coaches table."""
+    conn = get_db()
     try:
-        conn = get_db()
         test = conn.execute(
             """
             INSERT INTO coaches(coachid)
@@ -19,20 +13,11 @@ def db_test(userid):
             """,
             (userid, )
         )
-        conn.commit()
-        test2 = conn.execute(
-            """
-            SELECT pname 
-            FROM pokemon
-            WHERE monid < 11
-            """
-        )
-        pokemon = test2.fetchall()
-        for mon in pokemon:
-            print(mon)
-        return "Success!"
+        return 0
+    except sqlite3.IntegrityError:
+        return 'This user is already a coach.'
     except:
-        return "Failure!"
+        return 'An Error has occured.'
     finally:
+        conn.commit()
         conn.close()
-    #trigger check in query
