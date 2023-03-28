@@ -15,7 +15,7 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from coach_helpers import insert_coach, delete_coach
+from coach_helpers import insert_coach, delete_coach, replace_coach
 from draft_helpers import *
 
 
@@ -40,31 +40,35 @@ async def register(ctx, user: discord.Member):
     status = insert_coach(user.id, user.name)
     if status == 0:
         await ctx.send(f':ballot_box_with_check: {user.name} has been registered as a coach.')
+    elif status == 1:
+        await ctx.send(':x: This user is already a coach.')
     else:
-        await ctx.send(status)
+        await ctx.send(':x: An error has occured.')
 
 @bot.command()
 async def delete(ctx, user: discord.Member):
     """Remove the specified server member from the draft league."""
-    delete_coach(user.id)
-    
-@register.error
-@delete.error
-async def reg_del_error(ctx, error):
-    """Check if the entered user is a server member."""
-    if isinstance(error, commands.errors.MemberNotFound):
-        await ctx.send(":x: Please specify a valid user.")
+    status = delete_coach(user.id)
+    if status == 0:
+        await ctx.send(f':ballot_box_with_check: {user.name} has been removed as a coach.')
+    elif status == 1:
+        await ctx.send(':x: The user is not a valid coach.')
+    else:
+        await ctx.send(':x: An error has occured.')
 
 @bot.command()
 async def replace(ctx, user1: discord.Member, user2: discord.Member):
     """Replace a current coach with the specified server member."""
-    # TODO: see comment above
+    delete_status, insert_status = replace_coach(user1.id, user2.id, user2.name)
+    #if statement with operation status
 
+@register.error
+@delete.error
 @replace.error
-async def rep_error(ctx, error):
+async def reg_del_error(ctx, error):
     """Check if the entered user is a server member."""
     if isinstance(error, commands.errors.MemberNotFound):
-        await ctx.send(":x: One or more of the specified users is invalid.")
+        await ctx.send(":x: Please specify valid server member(s).")
 
 @bot.command()
 async def draft(ctx):

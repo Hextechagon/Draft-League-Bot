@@ -6,7 +6,7 @@ def insert_coach(userid, username):
     """Insert the user with userid into the coaches table."""
     conn = get_db()
     try:
-        cur = conn.execute(
+        conn.execute(
             """
             INSERT INTO coaches(coachid, username)
             VALUES (?, ?)
@@ -15,29 +15,49 @@ def insert_coach(userid, username):
         )
         return 0
     except sqlite3.IntegrityError:
-        return ':x: This user is already a coach.'
+        return 1
     except:
-        return ':x: An Error has occured.'
+        # ping owner if this occurs
+        return 2
     finally:
         conn.commit()
         conn.close()
 
+
 def delete_coach(userid):
     """Insert the user with userid into the coaches table."""
     conn = get_db()
-    test = conn.execute(
-        """
-        DELETE FROM coaches
-        WHERE coachid = ?
-        """,
-        (userid, )
-    )
-    conn.commit()
-    conn.close()
-    #except sqlite3.IntegrityError:
-        #return 'This user is not a valid coach.'
-    #except:
-        #return 'An Error has occured.'
-    #finally:
-        #conn.commit()
-        #conn.close()
+    try:
+        cur = conn.execute(
+            """
+            SELECT coachid 
+            FROM coaches
+            WHERE coachid = ?
+            """,
+            (userid, )
+        )
+        coach = cur.fetchone()
+        if coach is not None:
+            conn.execute(
+                """
+                DELETE FROM coaches
+                WHERE coachid = ?
+                """,
+                (userid, )
+            )
+            return 0
+        else:
+            return 1
+    except:
+        return 2
+    finally:
+        conn.commit()
+        conn.close()
+
+#if modify userid1 inside, does the argument variable value change
+def replace_coach(userid1, userid2, username2): 
+    """Replace an existing coach (userid1) with a new coach (userid2)."""
+    delete_status = delete_coach(userid1)
+    if delete_status ==
+    insert_status = insert_coach(userid2, username2)
+    return delete_status, insert_status
