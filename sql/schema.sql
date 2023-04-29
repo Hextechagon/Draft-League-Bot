@@ -3,14 +3,16 @@ PRAGMA foreign_keys = ON;
 
 --username for easier comprehension when manually modifying database
 CREATE TABLE coaches(
-    coachid INTEGER PRIMARY KEY,
+    coachid INTEGER PRIMARY KEY AUTOINCREMENT,
+    discordid INTEGER NOT NULL,
     username VARCHAR(50) NOT NULL,
     wins INTEGER NOT NULL DEFAULT 0, 
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
     budget INTEGER NOT NULL DEFAULT 125, 
     finalized BOOLEAN NOT NULL DEFAULT 0,
-    tname VARCHAR(50) NOT NULL DEFAULT 'TBD'
+    tname VARCHAR(50) NOT NULL DEFAULT 'TBD', 
+    UNIQUE(discordid)
 );
 
 CREATE TABLE pokemon(

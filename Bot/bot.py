@@ -15,7 +15,7 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from coach_helpers import insert_coach, delete_coach, replace_coach
+from coach_helpers import insert_coach, bulk_insert, delete_coach, replace_coach, get_leaderboard
 from draft_helpers import *
 
 
@@ -34,16 +34,26 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command()
-async def register(ctx, user: discord.Member):
+async def guide(ctx):
+    """Display a list of all commands."""
+    await ctx.send('Help message here!')
+
+@bot.command()
+async def register(ctx, user: discord.Member, team_name = 'TBD'):
     """Enter the specified server member into the draft league."""
     # code to ping user await ctx.send(f'Hello <@{user.id}>!')
-    status = insert_coach(user.id, user.name)
+    status = insert_coach(user.id, user.name, team_name)
     if status == 0:
         await ctx.send(f':ballot_box_with_check: {user.name} has been registered as a coach.')
     elif status == 1:
-        await ctx.send(':x: This user is already a coach.')
+        await ctx.send(':x: The draft league is currently full.')
     else:
-        await ctx.send(':x: An error has occured.')
+        await ctx.send(f':x: {user.name} is already a coach.')
+
+@bot.command()
+async def bulk_register(ctx, *args):
+    """Enter the specified server members into the draft league."""
+    status = bulk_insert(args)
 
 @bot.command()
 async def delete(ctx, user: discord.Member):
@@ -51,16 +61,19 @@ async def delete(ctx, user: discord.Member):
     status = delete_coach(user.id)
     if status == 0:
         await ctx.send(f':ballot_box_with_check: {user.name} has been removed as a coach.')
-    elif status == 1:
-        await ctx.send(':x: The user is not a valid coach.')
     else:
-        await ctx.send(':x: An error has occured.')
+        await ctx.send(f':x: {user.name} is not a valid coach.')
 
 @bot.command()
-async def replace(ctx, user1: discord.Member, user2: discord.Member):
-    """Replace a current coach with the specified server member."""
-    delete_status, insert_status = replace_coach(user1.id, user2.id, user2.name)
-    #if statement with operation status
+async def replace(ctx, user1: discord.Member, user2: discord.Member, team_name = 'TBD'):
+    """Replace a current coach with the specified server member (inherits all previous coach data)."""
+    status = replace_coach(user1.id, user2.id, user2.name, team_name)
+    if status == 0:
+        await ctx.send(f':ballot_box_with_check: {user1.name} has been replaced by {user2.name} as a coach.')
+    elif status == 1:
+        await ctx.send(f':x: {user1.name} is not a valid coach.')
+    else:
+        await ctx.send(f':x: {user2.name} is already a coach.')
 
 @register.error
 @delete.error
@@ -71,8 +84,14 @@ async def reg_del_error(ctx, error):
         await ctx.send(":x: Please specify valid server member(s).")
 
 @bot.command()
+async def coaches(ctx):
+    """Display the leaderboard containing all current coaches."""
+    result = get_leaderboard()
+    await ctx.send(result)
+
+@bot.command()
 async def draft(ctx):
-    """Populates the draft_order list with the coaches in random order."""
+    """Populate the draft_order list with the coaches in random order."""
     # TODO: see comment above
 
 @bot.command()
