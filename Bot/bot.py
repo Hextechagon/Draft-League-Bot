@@ -1,6 +1,7 @@
 """Main file that listens and responds to commands.
 
 Commands include:
+UPDATE THIS!!!
 !register <@user>  
 !delete <@user>  
 !replace <@old_coach> <@new_coach>  
@@ -39,6 +40,8 @@ async def guide(ctx):
     await ctx.send('Help message here!')
 
 @bot.command()
+@commands.has_role('Draft Host')
+@commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
 async def register(ctx, user: discord.Member, team_name = 'TBD'):
     """Enter the specified server member into the draft league."""
     # code to ping user await ctx.send(f'Hello <@{user.id}>!')
@@ -51,11 +54,15 @@ async def register(ctx, user: discord.Member, team_name = 'TBD'):
         await ctx.send(f':x: {user.name} is already a coach.')
 
 @bot.command()
-async def bulk_register(ctx, *args):
+@commands.has_role('Draft Host')
+@commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
+async def bulk_register(ctx, *args: discord.Member):
     """Enter the specified server members into the draft league."""
-    status = bulk_insert(args)
+    # TODO: status = bulk_insert(args)
 
 @bot.command()
+@commands.has_role('Draft Host')
+@commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
 async def delete(ctx, user: discord.Member):
     """Remove the specified server member from the draft league."""
     status = delete_coach(user.id)
@@ -65,6 +72,8 @@ async def delete(ctx, user: discord.Member):
         await ctx.send(f':x: {user.name} is not a valid coach.')
 
 @bot.command()
+@commands.has_role('Draft Host')
+@commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
 async def replace(ctx, user1: discord.Member, user2: discord.Member, team_name = 'TBD'):
     """Replace a current coach with the specified server member (inherits all previous coach data)."""
     status = replace_coach(user1.id, user2.id, user2.name, team_name)
@@ -78,26 +87,29 @@ async def replace(ctx, user1: discord.Member, user2: discord.Member, team_name =
 @register.error
 @delete.error
 @replace.error
-async def reg_del_error(ctx, error):
+async def error_handler(ctx, error):
     """Check if the entered user is a server member."""
-    if isinstance(error, commands.errors.MemberNotFound):
-        await ctx.send(":x: Please specify valid server member(s).")
+    if isinstance(error, commands.MissingRole):
+        await ctx.send(':x: You do not have permission to use this command.')
+    elif isinstance(error, commands.errors.MemberNotFound):
+        await ctx.send(':x: Please specify valid server member(s).')
 
 @bot.command()
-async def coaches(ctx):
+async def rank(ctx):
     """Display the leaderboard containing all current coaches."""
-    result = get_leaderboard()
-    await ctx.send(result)
+    coaches = get_leaderboard()
+    output = '```' + '***Leaderboard***\n' + coaches + '```'
+    await ctx.send(output)
 
 @bot.command()
-async def draft(ctx):
-    """Populate the draft_order list with the coaches in random order."""
-    # TODO: see comment above
+async def start(ctx):
+    """Initiate the draft process by randomizing the draft order and beginning the timer."""
+    # TODO
 
 @bot.command()
 async def select(ctx, pokemon):
     """Add the specified pokemon to the coach's party."""
-    # TODO: see comment above
+    # TODO
 
 @bot.command()
 async def add(ctx, *pokemon):

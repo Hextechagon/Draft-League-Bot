@@ -46,9 +46,9 @@ def insert_coach(userid, username, tname):
         conn.commit()
         conn.close()
 
-def bulk_insert(coaches):
+def bulk_insert(users):
     """Insert the users with the specified userids into the coaches table."""
-    return 0
+    # TODO
 
 def delete_coach(userid):
     """Insert the user with userid into the coaches table."""

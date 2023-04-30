@@ -1,3 +1,4 @@
+"""Establish database connection."""
 import sqlite3
 import pathlib
 
