@@ -104,3 +104,12 @@ def get_leaderboard():
     coaches = cur.fetchall()
     conn.close()
     return [row[0] for row in coaches]
+
+def get_info(userid):
+    """Display the information of the coach with userid."""
+    # join pokemon and coach table
+    conn = get_db()
+    cur = conn.execute(
+        """
+        """
+    )

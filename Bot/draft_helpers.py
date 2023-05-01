@@ -21,7 +21,7 @@ def randomize_order():
         return num_coaches
     return [row[0] for row in draft_order]
 
-def pick_pokemon(userid, pokemon):
+def pick_pokemon(pokemon, userid):
     """Associate a pokemon with the coach who drafted it."""
     conn = get_db()
     # break this into functions
@@ -36,25 +36,27 @@ def pick_pokemon(userid, pokemon):
     pokemon_info = cur1.fetchone()
     if pokemon_info[0] == 0:
         conn.close()
-        return 1
+        return 1, None
     cur2 = conn.execute(
         """
-        SELECT budget 
+        SELECT budget, coachid 
         FROM coaches
         WHERE discordid = ?
         """,
         (userid, )
     )
     coach_budget = cur2.fetchone()[0]
+    coach_id = cur2.fetchone()[1]
     if coach_budget < pokemon_info[1]:
-        return 2
+        conn.close()
+        return 2, None
     conn.execute(
         """
         UPDATE pokemon
         SET coachid = ?
         WHERE pname = ?
         """,
-        (userid, pokemon)
+        (coach_id, pokemon)
     )
     conn.execute(
         """
@@ -64,4 +66,6 @@ def pick_pokemon(userid, pokemon):
         """,
         (pokemon_info[1], userid)
     )
-    return 0
+    conn.commit()
+    conn.close()
+    return 0, coach_budget - pokemon_info[1]

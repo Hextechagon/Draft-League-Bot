@@ -31,15 +31,22 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft League')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def edit(self, ctx, prev_pokemon, pokemon):
-        """Change the pick that a coach made before the next coach picks."""
-        # TODO
+    async def select(self, ctx, pokemon):
+        """Add the specified pokemon to the coach's party."""
+        # need to check if command sender is the one who should be drafting. 
+        status, remaining_points = pick_pokemon(pokemon, ctx.author.id)
+        if status == 0:
+            await ctx.send(f':ballot_box_with_check: {pokemon} has been added to your team; you have {remaining_points} points left.')
+        elif status == 1:
+            await ctx.send(f':x: {pokemon} is already taken.')
+        else:
+            await ctx.send(f':x: You do not have enough points to draft {pokemon}.')
 
     @commands.command()
     @commands.has_role('Draft League')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def select(self, ctx, pokemon):
-        """Add the specified pokemon to the coach's party."""
+    async def edit(self, ctx, prev_pokemon, pokemon):
+        """Change the pick that a coach made before the next coach picks."""
         # TODO
 
     @commands.command()

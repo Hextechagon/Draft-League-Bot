@@ -1,7 +1,7 @@
 """Commands for coaches."""
 import discord
 from discord.ext import commands
-from coach_helpers import insert_coach, delete_coach, replace_coach, get_leaderboard
+from coach_helpers import insert_coach, delete_coach, replace_coach, get_leaderboard, get_info
 
 
 class Coach(commands.Cog):
