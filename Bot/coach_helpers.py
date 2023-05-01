@@ -15,6 +15,7 @@ def verify_coach(userid):
         (userid, )
     )
     coach = cur.fetchone()
+    conn.close()
     if coach is not None:
         return 0
     return 1
@@ -29,7 +30,7 @@ def insert_coach(userid, username, tname):
             FROM coaches
             """
         )
-        # change number to league capacity
+        # check if the draft league is already full
         if cur.fetchone()[0]== 16:
             return 1
         conn.execute(
@@ -101,10 +102,5 @@ def get_leaderboard():
         """
     )
     coaches = cur.fetchall()
-    output = ''
-    if len(coaches) == 0:
-        output = 'There are no registered coaches.'
-    else:
-        for rank, coach in enumerate(coaches, 1):
-            output += str(rank) + '. ' + coach[0] + '\n'
-    return output
+    conn.close()
+    return [row[0] for row in coaches]

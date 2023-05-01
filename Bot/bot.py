@@ -16,8 +16,8 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from cogs.coach import Coach
-from cogs.draft import Draft
+from coach import Coach
+from draft import Draft
 
 
 load_dotenv()
@@ -34,6 +34,12 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     await bot.add_cog(Coach(bot))
     await bot.add_cog(Draft(bot))
+
+@bot.event
+async def on_command_error(ctx, error):
+    """Handle invalid commands."""
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send('You entered an invalid command, use !guide to see the list of all commands.')
 
 @bot.command()
 async def guide(ctx):

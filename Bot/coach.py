@@ -16,7 +16,6 @@ class Coach(commands.Cog):
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
     async def register(self, ctx, user: discord.Member, team_name = 'TBD'):
         """Enter the specified server member into the draft league."""
-        # code to ping user await ctx.send(f'Hello <@{user.id}>!')
         status = insert_coach(user.id, user.name, team_name)
         if status == 0:
             await ctx.send(f':ballot_box_with_check: {user.name} has been registered as a coach.')
@@ -60,14 +59,24 @@ class Coach(commands.Cog):
     async def rank(self, ctx):
         """Display the leaderboard containing all current coaches."""
         coaches = get_leaderboard()
-        output = '```' + '***Leaderboard***\n' + coaches + '```'
-        await ctx.send(output)
-   
+        output = ''
+        if len(coaches) == 0:
+            output += 'There are no registered coaches.'
+            await ctx.send(':x: ' + output)
+        else:
+            for rank, coach in enumerate(coaches, 1):
+                output += str(rank) + '. ' + coach + '\n'
+            await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
+    
+    @commands.command()
+    async def info(self, ctx, user: discord.Member):
+        """Display user information (pokemon, budget for now, update later)."""
+
     @register.error
     @delete.error
     @replace.error
     async def error_handler(self, ctx, error):
-        """Check if the entered user is a server member."""
+        """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):
             await ctx.send(':x: You do not have permission to use this command.')
         elif isinstance(error, commands.errors.MemberNotFound):

@@ -16,12 +16,10 @@ CREATE TABLE coaches(
 );
 
 CREATE TABLE pokemon(
-    monid INTEGER PRIMARY KEY AUTOINCREMENT,
-    pname VARCHAR(50) NOT NULL, 
+    pname VARCHAR(50) PRIMARY KEY, 
     cost INTEGER NOT NULL,
     kills INTEGER NOT NULL DEFAULT 0,
     coachid INTEGER,
-    UNIQUE(pname),
     FOREIGN KEY(coachid) REFERENCES coaches(coachid) ON DELETE CASCADE
 );
 
