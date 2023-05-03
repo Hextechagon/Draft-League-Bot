@@ -15,11 +15,12 @@ def randomize_order():
     )
     draft_order = cur.fetchall()
     conn.close()
-    # check if the draft league capacity requirment is fullfilled
+    # check if the draft league capacity requirment is fullfilled (CHANGE TO 16)
     num_coaches = len(draft_order)
-    if num_coaches != 16:
+    if num_coaches < 3:
         return num_coaches
     return [row[0] for row in draft_order]
+
 
 def pick_pokemon(pokemon, userid):
     """Associate a pokemon with the coach who drafted it."""
@@ -39,14 +40,13 @@ def pick_pokemon(pokemon, userid):
         return 1, None
     cur2 = conn.execute(
         """
-        SELECT budget, coachid 
+        SELECT budget
         FROM coaches
         WHERE discordid = ?
         """,
         (userid, )
     )
     coach_budget = cur2.fetchone()[0]
-    coach_id = cur2.fetchone()[1]
     if coach_budget < pokemon_info[1]:
         conn.close()
         return 2, None
@@ -56,7 +56,7 @@ def pick_pokemon(pokemon, userid):
         SET coachid = ?
         WHERE pname = ?
         """,
-        (coach_id, pokemon)
+        (userid, pokemon)
     )
     conn.execute(
         """

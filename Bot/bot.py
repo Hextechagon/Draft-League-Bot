@@ -23,10 +23,11 @@ from draft import Draft
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-#Create the bot connection
+# create the bot connection
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
+
 
 @bot.event
 async def on_ready():
@@ -35,11 +36,14 @@ async def on_ready():
     await bot.add_cog(Coach(bot))
     await bot.add_cog(Draft(bot))
 
+
 @bot.event
 async def on_command_error(ctx, error):
     """Handle invalid commands."""
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('You entered an invalid command, use !guide to see the list of all commands.')
+        await ctx.send('You either entered an invalid command or did not include \
+                        all the required argument(s): use !guide for more details.')
+
 
 @bot.command()
 async def guide(ctx):

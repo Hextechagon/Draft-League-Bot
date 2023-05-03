@@ -20,6 +20,7 @@ def verify_coach(userid):
         return 0
     return 1
 
+
 def insert_coach(userid, username, tname):
     """Insert the user with userid into the coaches table."""
     conn = get_db()
@@ -31,7 +32,7 @@ def insert_coach(userid, username, tname):
             """
         )
         # check if the draft league is already full
-        if cur.fetchone()[0]== 16:
+        if cur.fetchone()[0] == 16:
             return 1
         conn.execute(
             """
@@ -47,9 +48,11 @@ def insert_coach(userid, username, tname):
         conn.commit()
         conn.close()
 
+
 def bulk_insert(users):
     """Insert the users with the specified userids into the coaches table."""
     # TODO
+
 
 def delete_coach(userid):
     """Insert the user with userid into the coaches table."""
@@ -67,6 +70,7 @@ def delete_coach(userid):
         return 0
     conn.close()
     return 1
+
 
 def replace_coach(userid1, userid2, username2, tname):
     """Replace an existing coach with a new coach."""
@@ -91,6 +95,7 @@ def replace_coach(userid1, userid2, username2, tname):
         conn.commit()
         conn.close()
 
+
 def get_leaderboard():
     """Display all current coaches."""
     conn = get_db()
@@ -105,11 +110,20 @@ def get_leaderboard():
     conn.close()
     return [row[0] for row in coaches]
 
+
 def get_info(userid):
-    """Display the information of the coach with userid."""
-    # join pokemon and coach table
+    """Display the information of a coach with userid."""
     conn = get_db()
     cur = conn.execute(
         """
-        """
+        SELECT pname, cost, budget 
+        FROM pokemon, coaches
+        WHERE coachid = discordid AND discordid = ?
+        """,
+        (userid, )
     )
+    coach_data = cur.fetchall()
+    conn.close()
+    if len(coach_data) > 0:
+        return [row[:2] for row in coach_data], coach_data[0][2]
+    return None, None

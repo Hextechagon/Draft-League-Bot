@@ -3,8 +3,7 @@ PRAGMA foreign_keys = ON;
 
 --username for easier comprehension when manually modifying database
 CREATE TABLE coaches(
-    coachid INTEGER PRIMARY KEY AUTOINCREMENT,
-    discordid INTEGER NOT NULL,
+    discordid INTEGER PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     wins INTEGER NOT NULL DEFAULT 0, 
     losses INTEGER NOT NULL DEFAULT 0,
@@ -20,7 +19,9 @@ CREATE TABLE pokemon(
     cost INTEGER NOT NULL,
     kills INTEGER NOT NULL DEFAULT 0,
     coachid INTEGER,
-    FOREIGN KEY(coachid) REFERENCES coaches(coachid) ON DELETE CASCADE
+    FOREIGN KEY(coachid) REFERENCES coaches(discordid) 
+    ON UPDATE CASCADE 
+    ON DELETE CASCADE
 );
 
 CREATE TABLE matches(
@@ -29,6 +30,10 @@ CREATE TABLE matches(
     coach2 INTEGER,
     mweek INTEGER NOT NULL,
     CHECK (coach1 != coach2),
-    FOREIGN KEY(coach1) REFERENCES coaches(coachid) ON DELETE CASCADE,
-    FOREIGN KEY(coach2) REFERENCES coaches(coachid) ON DELETE CASCADE
+    FOREIGN KEY(coach1) REFERENCES coaches(discordid) 
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+    FOREIGN KEY(coach2) REFERENCES coaches(discordid) 
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
