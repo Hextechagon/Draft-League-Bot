@@ -8,21 +8,34 @@ def randomize_order():
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT username 
+        SELECT discordid 
         FROM coaches
         ORDER BY RANDOM()
         """
     )
     draft_order = cur.fetchall()
-    conn.close()
     # check if the draft league capacity requirment is fullfilled (CHANGE TO 16)
     num_coaches = len(draft_order)
     if num_coaches < 3:
+        conn.close()
         return num_coaches
-    return [row[0] for row in draft_order]
+    # save the order in coaches table
+    for order, coach in enumerate(draft_order, 1):
+        conn.execute(
+            """     
+            UPDATE coaches
+            SET dorder = ?
+            WHERE discordid = ?
+            """,
+            (order, coach[0])
+        )
+    conn.commit()
+    conn.close()
+    return [[row[0], 125, False] for row in draft_order]
 
 
 def pick_pokemon(pokemon, userid):
+    # FIX: budget related things since budget is removed from table
     """Associate a pokemon with the coach who drafted it."""
     conn = get_db()
     # break this into functions

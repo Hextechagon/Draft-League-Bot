@@ -1,4 +1,5 @@
 """Commands for drafting."""
+import datetime
 import discord
 from discord.ext import commands
 from draft_helpers import randomize_order, pick_pokemon
@@ -10,8 +11,16 @@ class Draft(commands.Cog):
     def __init__(self, bot):
         """Initialize the draft cog."""
         self.bot = bot
-        self.draft_active = False
         self.draft_order = []
+        self.draft_round = 0
+        # check if two variables below are necessary
+        self.current_time = None
+        self.draft_deadline = None
+
+    async def draft_timer(self):
+        """Manage the timing of the drafting phase."""
+        while self.draft_round > 0:
+            
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -25,10 +34,13 @@ class Draft(commands.Cog):
             await ctx.send(output)
         else:
             self.draft_order = random_order
-            self.draft_active = True
+            self.draft_round = 1
             for order, coach in enumerate(self.draft_order, 1):
-                output += str(order) + '. ' + coach + '\n'
+                user = await self.bot.fetch_user(coach[0])
+                username = user.name
+                output += str(order) + '. ' + username + '\n'
             await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
+            self.draft_timer()
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -36,8 +48,8 @@ class Draft(commands.Cog):
     async def select(self, ctx, pokemon):
         """Add the specified pokemon to the coach's party."""
         # also need to check if command sender is the one who should be drafting (decorator).
-        # checks if the draft is active (maybe use decorator)
-        if self.draft_active is False:
+        # checks if the draft is active (use decorator)
+        if self.draft_round == 0:
             await ctx.send(':x: The draft process has not started yet.')
         else:
             status, remaining_points = pick_pokemon(pokemon, ctx.author.id)

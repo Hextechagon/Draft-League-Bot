@@ -1,16 +1,16 @@
 PRAGMA foreign_keys = ON;
 
 
---username for easier comprehension when manually modifying database
+--keep budget for post-draft changes (fill in after draft finalized = 1)
 CREATE TABLE coaches(
     discordid INTEGER PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     wins INTEGER NOT NULL DEFAULT 0, 
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
-    budget INTEGER NOT NULL DEFAULT 125, 
     finalized BOOLEAN NOT NULL DEFAULT 0,
-    tname VARCHAR(50) NOT NULL DEFAULT 'TBD', 
+    budget INTEGER,
+    dorder INTEGER, 
     UNIQUE(discordid)
 );
 
@@ -19,6 +19,7 @@ CREATE TABLE pokemon(
     cost INTEGER NOT NULL,
     kills INTEGER NOT NULL DEFAULT 0,
     coachid INTEGER,
+    round INTEGER,
     FOREIGN KEY(coachid) REFERENCES coaches(discordid) 
     ON UPDATE CASCADE 
     ON DELETE CASCADE

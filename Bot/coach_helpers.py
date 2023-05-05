@@ -21,7 +21,7 @@ def verify_coach(userid):
     return 1
 
 
-def insert_coach(userid, username, tname):
+def insert_coach(userid, username):
     """Insert the user with userid into the coaches table."""
     conn = get_db()
     try:
@@ -36,10 +36,10 @@ def insert_coach(userid, username, tname):
             return 1
         conn.execute(
             """
-            INSERT INTO coaches(discordid, username, tname)
-            VALUES (?, ?, ?)
+            INSERT INTO coaches(discordid, username)
+            VALUES (?, ?)
             """,
-            (userid, username, tname)
+            (userid, username)
         )
         return 0
     except sqlite3.IntegrityError:
@@ -54,25 +54,7 @@ def bulk_insert(users):
     # TODO
 
 
-def delete_coach(userid):
-    """Insert the user with userid into the coaches table."""
-    conn = get_db()
-    if verify_coach(userid) == 0:
-        conn.execute(
-            """
-            DELETE FROM coaches
-            WHERE discordid = ?
-            """,
-            (userid, )
-        )
-        conn.commit()
-        conn.close()
-        return 0
-    conn.close()
-    return 1
-
-
-def replace_coach(userid1, userid2, username2, tname):
+def replace_coach(userid1, userid2, username2):
     """Replace an existing coach with a new coach."""
     conn = get_db()
     try:
@@ -81,11 +63,10 @@ def replace_coach(userid1, userid2, username2, tname):
                 """
                 UPDATE coaches
                 SET username = ?, 
-                    tname = ?,
                     discordid = ?
                 WHERE discordid = ?
                 """,
-                (username2, tname, userid2, userid1)
+                (username2, userid2, userid1)
             )
             return 0
         return 1

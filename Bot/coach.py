@@ -1,7 +1,7 @@
 """Commands for coaches."""
 import discord
 from discord.ext import commands
-from coach_helpers import insert_coach, delete_coach, replace_coach, get_leaderboard, get_info
+from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info
 
 
 class Coach(commands.Cog):
@@ -14,9 +14,9 @@ class Coach(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def register(self, ctx, user: discord.Member, team_name='TBD'):
+    async def register(self, ctx, user: discord.Member):
         """Enter the specified server member into the draft league."""
-        status = insert_coach(user.id, user.name, team_name)
+        status = insert_coach(user.id, user.name)
         if status == 0:
             await ctx.send(f':white_check_mark: {user.name} has been registered as a coach.')
         elif status == 1:
@@ -34,20 +34,9 @@ class Coach(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def delete(self, ctx, user: discord.Member):
-        """Remove the specified server member from the draft league."""
-        status = delete_coach(user.id)
-        if status == 0:
-            await ctx.send(f':white_check_mark: {user.name} has been removed as a coach.')
-        else:
-            await ctx.send(f':x: {user.name} is not a valid coach.')
-
-    @commands.command()
-    @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def replace(self, ctx, user1: discord.Member, user2: discord.Member, team_name='TBD'):
+    async def replace(self, ctx, user1: discord.Member, user2: discord.Member):
         """Replace a current coach with the specified server member (inherits previous data)."""
-        status = replace_coach(user1.id, user2.id, user2.name, team_name)
+        status = replace_coach(user1.id, user2.id, user2.name)
         if status == 0:
             await ctx.send(f':white_check_mark: {user1.name} has been replaced by \
                            {user2.name} as a coach.')
@@ -85,7 +74,6 @@ class Coach(commands.Cog):
                             output + '```')
 
     @register.error
-    @delete.error
     @replace.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
