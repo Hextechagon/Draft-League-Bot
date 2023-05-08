@@ -13,11 +13,10 @@ Note: pokemon_list consists of pokemon names separated by one space
 put additional notes after each command
 """
 import os
-import asyncio
 import pathlib
 import discord
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import tasks, commands
 from coach import Coach
 from draft import Draft
 
@@ -31,14 +30,13 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
+@tasks.loop(hours=1)
 async def upload_log():
     """Send the database file to a log channel every hour."""
     channel = bot.get_channel(1103773916327051394)
     root = pathlib.Path(__file__).resolve().parent.parent
     database_file = root/'var'/'CTLDL_Bot.sqlite3'
-    while True:
-        await channel.send(file=discord.File(database_file))
-        await asyncio.sleep(3600)
+    await channel.send(file=discord.File(database_file))
 
 
 @bot.event
@@ -47,7 +45,7 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     await bot.add_cog(Coach(bot))
     await bot.add_cog(Draft(bot))
-    await upload_log()
+    upload_log.start()
 
 
 @bot.event

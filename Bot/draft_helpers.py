@@ -31,36 +31,27 @@ def randomize_order():
         )
     conn.commit()
     conn.close()
-    return [[row[0], 125, False] for row in draft_order]
+    return [[row[0], 125] for row in draft_order]
 
 
-def pick_pokemon(pokemon, userid):
+def pick_pokemon(pokemon, userid, coach_budget):
     # FIX: budget related things since budget is removed from table
     """Associate a pokemon with the coach who drafted it."""
     conn = get_db()
     # break this into functions
     cur1 = conn.execute(
         """
-        SELECT COUNT(*), cost
+        SELECT cost
         FROM pokemon
         WHERE pname = ? AND coachid IS NULL
         """,
         (pokemon, )
     )
     pokemon_info = cur1.fetchone()
-    if pokemon_info[0] == 0:
+    if len(pokemon_info) == 0:
         conn.close()
         return 1, None
-    cur2 = conn.execute(
-        """
-        SELECT budget
-        FROM coaches
-        WHERE discordid = ?
-        """,
-        (userid, )
-    )
-    coach_budget = cur2.fetchone()[0]
-    if coach_budget < pokemon_info[1]:
+    elif coach_budget < pokemon_info[0]:
         conn.close()
         return 2, None
     conn.execute(

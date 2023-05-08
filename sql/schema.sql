@@ -1,7 +1,7 @@
 PRAGMA foreign_keys = ON;
 
 
---keep budget for post-draft changes (fill in after draft finalized = 1)
+--keep budget for post-draft changes (fill in after draft finalized)
 CREATE TABLE coaches(
     discordid INTEGER PRIMARY KEY,
     username VARCHAR(50) NOT NULL,

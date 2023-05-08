@@ -71,7 +71,7 @@ class Coach(commands.Cog):
             for index, pokemon in enumerate(coach_data, 1):
                 output += str(index) + '. ' + pokemon[0] + f' ({pokemon[1]})\n'
             await ctx.send('```yaml\n[' + user.name + f'\'s Draft] : {budget} points remaining\n' +
-                            output + '```')
+                           output + '```')
 
     @register.error
     @replace.error
