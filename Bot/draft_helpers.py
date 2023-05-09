@@ -35,41 +35,54 @@ def randomize_order():
 
 
 def pick_pokemon(pokemon, userid, coach_budget):
-    # FIX: budget related things since budget is removed from table
     """Associate a pokemon with the coach who drafted it."""
+    # convert the Pokémon name into the format stored in the database
+    words = pokemon.split('!')
+    pname = ' '.join(words)
     conn = get_db()
     # break this into functions
     cur1 = conn.execute(
         """
-        SELECT cost
+        SELECT coachid, cost
         FROM pokemon
-        WHERE pname = ? AND coachid IS NULL
+        WHERE pname = ?
         """,
-        (pokemon, )
+        (pname, )
     )
     pokemon_info = cur1.fetchone()
-    if len(pokemon_info) == 0:
+    if pokemon_info is None:
         conn.close()
-        return 1, None
-    elif coach_budget < pokemon_info[0]:
+        return 1, pname, None
+    if pokemon_info[0] is not None:
         conn.close()
-        return 2, None
+        return 2, pname, None
+    if coach_budget < pokemon_info[1]:
+        conn.close()
+        return 3, pname, None
     conn.execute(
         """
         UPDATE pokemon
         SET coachid = ?
         WHERE pname = ?
         """,
-        (userid, pokemon)
-    )
-    conn.execute(
-        """
-        UPDATE coaches
-        SET budget = budget - ?
-        WHERE discordid = ?
-        """,
-        (pokemon_info[1], userid)
+        (userid, pname)
     )
     conn.commit()
     conn.close()
-    return 0, coach_budget - pokemon_info[1]
+    return 0, pname, coach_budget - pokemon_info[1]
+
+
+def finalize(userid, remaining_budget):
+    """Mark a coach's status as finalized and update the remaining budget in the coaches table."""
+    conn = get_db()
+    conn.execute(
+        """
+        UPDATE coaches
+        SET finalized = 1,
+            budget = ?
+        WHERE discordid = ?
+        """,
+        (remaining_budget, userid)
+    )
+    conn.commit()
+    conn.close()

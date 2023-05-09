@@ -3,7 +3,7 @@ import datetime
 import asyncio
 import discord
 from discord.ext import commands
-from draft_helpers import randomize_order, pick_pokemon
+from draft_helpers import randomize_order, pick_pokemon, finalize
 
 
 class Draft(commands.Cog):
@@ -12,13 +12,38 @@ class Draft(commands.Cog):
     def __init__(self, bot):
         """Initialize the draft cog."""
         self.bot = bot
-        # each element consists of [discordid, budget]
+        # each element consists of [discordid, budget, order]
         self.draft_queue = []
-        self.skipped_coaches = []
+        # each element consists of [discordid, # times skipped] - DO ALL COACHES FOR CALCULATIONS
+        self.skipped_coaches = {}
         self.draft_round = 0
         self.draft_position = 0
         self.drafted = False
         self.draft_deadline = None
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
+    async def randomize(self, ctx):
+        """Randomize the draft order."""
+        if not (self.draft_round == 0 and self.draft_position == 0):
+            await ctx.send('The draft process already started, so the order cannot be modified.')
+            return
+        random_order = randomize_order()
+        output = ''
+        if isinstance(random_order, int):
+            output += f':x: The draft league does not have enough players ({random_order}/16).'
+            await ctx.send(output)
+        else:
+            self.draft_round = 1
+            self.draft_queue = random_order
+            for order, coach in enumerate(self.draft_queue, 1):
+                coach.append(order)
+                self.skipped_coaches[coach[0]] = 0
+                user = await self.bot.fetch_user(coach[0])
+                username = user.name
+                output += str(order) + '. ' + username + '\n'
+            await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
 
     async def find_next(self):
         """Determine the next coach in the drafting process."""
@@ -40,13 +65,10 @@ class Draft(commands.Cog):
         self.draft_deadline = current_time + \
             datetime.timedelta(minutes=duration)
         while current_time < self.draft_deadline:
-            # check if drafted, if true break out; else await and update
             if self.drafted is True:
                 break
-            # MAYBE NEED TO INCREASE THIS!!!
-            await asyncio.sleep(5)
+            await asyncio.sleep(3)
             current_time = datetime.datetime.now()
-        # FIX: HOW TO HALVE: INSTANCE VARIABLE???
         prev_coach = self.draft_position
         await self.find_next()
         if self.drafted is False:
@@ -61,33 +83,13 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def randomize(self, ctx):
-        """Randomize the draft order."""
-        if not (self.draft_round == 0 and self.draft_position == 0):
-            await ctx.send('The draft process already started, so the order cannot be modified.')
-            return
-        random_order = randomize_order()
-        output = ''
-        if isinstance(random_order, int):
-            output += f':x: The draft league does not have enough players ({random_order}/16).'
-            await ctx.send(output)
-        else:
-            self.draft_queue = random_order
-            self.draft_round = 1
-            for order, coach in enumerate(self.draft_queue, 1):
-                user = await self.bot.fetch_user(coach[0])
-                username = user.name
-                output += str(order) + '. ' + username + '\n'
-            await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
-
-    @commands.command()
-    @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
     async def begin(self, ctx):
-        """Initiate the draft process."""
+        """Initiate the draft process and manage the timer."""
         await ctx.send(f'The draft process has started.\n<@\
                        {self.draft_queue[self.draft_position][0]}> is now on the clock.')
-        await self.start_timer(datetime.datetime.now(), 1)
+        while len(self.draft_queue) > 0:
+            await self.start_timer(datetime.datetime.now(), 1)
+            await asyncio.sleep(3)
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -101,24 +103,25 @@ class Draft(commands.Cog):
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
     async def select(self, ctx, pokemon):
         """Add the specified pokemon to the coach's party."""
-        # also need to check if command sender is the one who should be drafting (decorator).
         if self.draft_round == 0:
             await ctx.send(':x: The draft process has not started yet.')
         elif ctx.author.id != self.draft_queue[self.draft_position][0]:
             await ctx.send(':x: It is not your turn to draft yet.')
         else:
-            status, remaining_points = pick_pokemon(pokemon, ctx.author.id, self.draft_queue[self.draft_position][1])
+            status, pname, remaining_points = pick_pokemon(pokemon, ctx.author.id,
+                                                           self.draft_queue[self.draft_position][1])
             if status == 0:
-                await ctx.send(f':white_check_mark: {pokemon} has been added to \
+                await ctx.send(f':white_check_mark: {pname} has been added to \
                                your team; you have {remaining_points} points left.')
+                self.draft_queue[self.draft_position][1] = remaining_points
                 self.drafted = True
             elif status == 1:
-                # FIX: invalid pokemon outputs this too (select pname in helper query instead of putting it in condition, and check if is null after fetchone)
-                # FIX: two word pokemon (e.g. Iron Valient) shows up as already taken since only first word is read in
-                # maybe ask users to put the two words together with a special symbol in between
-                await ctx.send(f':x: {pokemon} is already taken.')
+                await ctx.send(f':x: {pname} is not a valid Pokémon; you must enter the exact \
+                               name stated in the Google Sheets.')
+            elif status == 2:
+                await ctx.send(f':x: {pname} is already taken.')
             else:
-                await ctx.send(f':x: You do not have enough points to draft {pokemon}.')
+                await ctx.send(f':x: You do not have enough points to draft {pname}.')
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -130,9 +133,11 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft League')
     @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
-    async def final(self, ctx):
-        """Specify that a coach completed his or her draft."""
-        # TODO
+    async def done(self, ctx):
+        """Specify that a coach completed the drafting phase."""
+        finalize(ctx.author.id, self.draft_queue[self.draft_position][1])
+        completed_coach = self.draft_queue.pop(self.draft_position)
+        await ctx.send(f':white_check_mark: {completed_coach[0]} has finished drafting.')
 
     @commands.command()
     async def add(self, ctx, *pokemon):

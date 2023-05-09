@@ -1,4 +1,5 @@
 """Commands for coaches."""
+import bisect
 import discord
 from discord.ext import commands
 from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info
@@ -38,6 +39,15 @@ class Coach(commands.Cog):
         """Replace a current coach with the specified server member (inherits previous data)."""
         status = replace_coach(user1.id, user2.id, user2.name)
         if status == 0:
+            # update the draft_queue if the draft process is active
+            draft_cog = self.bot.get_cog('Draft')
+            draft_round = draft_cog.draft_round
+            if draft_round > 0:
+                coach_index = bisect.bisect_left([coach[0] for coach in draft_cog.draft_queue],
+                                                 user1.id)
+                if coach_index < len(draft_cog.draft_queue) and \
+                                     draft_cog.draft_queue[coach_index][0] == user1.id:
+                    draft_cog.draft_queue[coach_index][0] = user2.id
             await ctx.send(f':white_check_mark: {user1.name} has been replaced by \
                            {user2.name} as a coach.')
         elif status == 1:
