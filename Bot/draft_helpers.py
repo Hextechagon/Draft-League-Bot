@@ -1,5 +1,4 @@
 """Helper functions for all draft-related functionalities."""
-import sqlite3
 from db_conn import get_db
 
 
@@ -31,17 +30,31 @@ def randomize_order():
         )
     conn.commit()
     conn.close()
-    return [[row[0], 125] for row in draft_order]
+    return draft_order
 
 
-def pick_pokemon(pokemon, userid, coach_budget):
+def get_order():
+    """Return the draft order."""
+    conn = get_db()
+    cur = conn.execute(
+        """
+        SELECT dorder, discordid
+        FROM coaches
+        ORDER BY dorder
+        """
+    )
+    draft_order = cur.fetchall()
+    conn.close()
+    return draft_order
+
+def pick_pokemon(pokemon, draft_round, userid, coach_budget):
     """Associate a pokemon with the coach who drafted it."""
     # convert the Pokémon name into the format stored in the database
     words = pokemon.split('!')
     pname = ' '.join(words)
     conn = get_db()
-    # break this into functions
-    cur1 = conn.execute(
+    # break this into functions if FA has similar code
+    cur = conn.execute(
         """
         SELECT coachid, cost
         FROM pokemon
@@ -49,7 +62,7 @@ def pick_pokemon(pokemon, userid, coach_budget):
         """,
         (pname, )
     )
-    pokemon_info = cur1.fetchone()
+    pokemon_info = cur.fetchone()
     if pokemon_info is None:
         conn.close()
         return 1, pname, None
@@ -62,10 +75,11 @@ def pick_pokemon(pokemon, userid, coach_budget):
     conn.execute(
         """
         UPDATE pokemon
-        SET coachid = ?
+        SET coachid = ?,
+            round = ?
         WHERE pname = ?
         """,
-        (userid, pname)
+        (userid, draft_round, pname)
     )
     conn.commit()
     conn.close()

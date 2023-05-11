@@ -11,6 +11,7 @@ class Coach(commands.Cog):
     def __init__(self, bot):
         """Initialize the coach cog."""
         self.bot = bot
+        self.draft_cog = self.bot.get_cog('Draft')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -40,14 +41,12 @@ class Coach(commands.Cog):
         status = replace_coach(user1.id, user2.id, user2.name)
         if status == 0:
             # update the draft_queue if the draft process is active
-            draft_cog = self.bot.get_cog('Draft')
-            draft_round = draft_cog.draft_round
-            if draft_round > 0:
-                coach_index = bisect.bisect_left([coach[0] for coach in draft_cog.draft_queue],
-                                                 user1.id)
-                if coach_index < len(draft_cog.draft_queue) and \
-                                     draft_cog.draft_queue[coach_index][0] == user1.id:
-                    draft_cog.draft_queue[coach_index][0] = user2.id
+            if self.draft_cog.draft_round > 0:
+                coach_index = bisect.bisect_left([coach[0] for
+                                                 coach in self.draft_cog.draft_queue], user1.id)
+                if coach_index < len(self.draft_cog.draft_queue) and \
+                                     self.draft_cog.draft_queue[coach_index][0] == user1.id:
+                    self.draft_cog.draft_queue[coach_index][0] = user2.id
             await ctx.send(f':white_check_mark: {user1.name} has been replaced by \
                            {user2.name} as a coach.')
         elif status == 1:
@@ -65,26 +64,34 @@ class Coach(commands.Cog):
             await ctx.send(':x: ' + output)
         else:
             for rank, coach in enumerate(leaderboard, 1):
-                output += str(rank) + '. ' + coach + '\n'
+                user = await self.bot.fetch_user(coach[0])
+                username = user.name
+                output += str(rank) + '. ' + username + '\n'
             await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
 
     @commands.command()
     async def info(self, ctx, user: discord.Member):
         """Display user information (pokemon, budget for now, update later)."""
-        coach_data, budget = get_info(user.id)
+        coach_data = get_info(user.id)
         output = ''
-        if coach_data is None:
+        if coach_data == 1:
             # FIX: shows this message even if valid coach; should still output budget (use separate queries in the helper function?)
+            output += f'{user.name} has not drafted yet.'
+            await ctx.send(':warning: ' + output)
+        elif coach_data == 2:
             output += f'{user.name} is not a valid coach.'
             await ctx.send(':x: ' + output)
         else:
-            for index, pokemon in enumerate(coach_data, 1):
-                output += str(index) + '. ' + pokemon[0] + f' ({pokemon[1]})\n'
+            budget = 125
+            for pokemon in coach_data:
+                output += str(pokemon[0]) + '. ' + pokemon[1] + f' ({pokemon[2]})\n'
+                budget -= pokemon[2]
             await ctx.send('```yaml\n[' + user.name + f'\'s Draft] : {budget} points remaining\n' +
                            output + '```')
 
     @register.error
     @replace.error
+    @info.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

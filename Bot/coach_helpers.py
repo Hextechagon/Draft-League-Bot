@@ -78,33 +78,38 @@ def replace_coach(userid1, userid2, username2):
 
 
 def get_leaderboard():
-    """Display all current coaches."""
+    """Return all current coaches."""
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT username
+        SELECT discordid
         FROM coaches
         ORDER BY wins DESC, netkd DESC
         """
     )
-    coaches = cur.fetchall()
+    coach_ranking = cur.fetchall()
     conn.close()
-    return [row[0] for row in coaches]
+    return coach_ranking
 
 
 def get_info(userid):
-    """Display the information of a coach with userid."""
+    """Return the information of a coach with userid."""
+    # TODO: (pokemon, round drafted, remaining budget), (match record, net kd, upcoming opponent)
     conn = get_db()
-    cur = conn.execute(
-        """
-        SELECT pname, cost, budget 
-        FROM pokemon, coaches
-        WHERE coachid = discordid AND discordid = ?
-        """,
-        (userid, )
-    )
-    coach_data = cur.fetchall()
-    conn.close()
-    if len(coach_data) > 0:
-        return [row[:2] for row in coach_data], coach_data[0][2]
-    return None, None
+    if verify_coach(userid) == 0:
+        cur = conn.execute(
+            """
+            SELECT round, pname, cost 
+            FROM pokemon
+            WHERE coachid = ?
+            ORDER BY round
+            """,
+            (userid, )
+        )
+        draft_data = cur.fetchall()
+        conn.close()
+        if len(draft_data) > 0:
+            return draft_data
+        return 1
+    return 2
+    
