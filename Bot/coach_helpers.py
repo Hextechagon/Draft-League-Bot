@@ -77,7 +77,7 @@ def replace_coach(userid1, userid2, username2):
         conn.close()
 
 
-def get_leaderboard():
+async def get_leaderboard():
     """Return all current coaches."""
     conn = get_db()
     cur = conn.execute(
@@ -92,7 +92,7 @@ def get_leaderboard():
     return coach_ranking
 
 
-def get_info(userid):
+async def get_info(userid):
     """Return the information of a coach with userid."""
     # TODO: (pokemon, round drafted, remaining budget), (match record, net kd, upcoming opponent)
     conn = get_db()
@@ -112,4 +112,3 @@ def get_info(userid):
             return draft_data
         return 1
     return 2
-    

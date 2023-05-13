@@ -1,5 +1,4 @@
 """Commands for coaches."""
-import bisect
 import discord
 from discord.ext import commands
 from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info
@@ -42,11 +41,13 @@ class Coach(commands.Cog):
         if status == 0:
             # update the draft_queue if the draft process is active
             if self.draft_cog.draft_round > 0:
-                coach_index = bisect.bisect_left([coach[0] for
-                                                 coach in self.draft_cog.draft_queue], user1.id)
-                if coach_index < len(self.draft_cog.draft_queue) and \
-                                     self.draft_cog.draft_queue[coach_index][0] == user1.id:
+                coach_index = [i for i, coach in enumerate(
+                    self.draft_cog.draft_queue) if coach[0] == ctx.author.id]
+                if coach_index:
                     self.draft_cog.draft_queue[coach_index][0] = user2.id
+                    retained_info = self.draft_cog.skipped_coaches.pop(
+                        user1.id)
+                    self.draft_cog.skipped_coaches[user2.id] = retained_info
             await ctx.send(f':white_check_mark: {user1.name} has been replaced by \
                            {user2.name} as a coach.')
         elif status == 1:
@@ -55,9 +56,10 @@ class Coach(commands.Cog):
             await ctx.send(f':x: {user2.name} is already a coach.')
 
     @commands.command()
+    @commands.check(lambda ctx: ctx.channel.id == 1085977763833446401)
     async def rank(self, ctx):
         """Display the leaderboard containing all current coaches."""
-        leaderboard = get_leaderboard()
+        leaderboard = await get_leaderboard()
         output = ''
         if len(leaderboard) == 0:
             output += 'There are no registered coaches.'
@@ -84,7 +86,8 @@ class Coach(commands.Cog):
         else:
             budget = 125
             for pokemon in coach_data:
-                output += str(pokemon[0]) + '. ' + pokemon[1] + f' ({pokemon[2]})\n'
+                output += str(pokemon[0]) + '. ' + \
+                    pokemon[1] + f' ({pokemon[2]})\n'
                 budget -= pokemon[2]
             await ctx.send('```yaml\n[' + user.name + f'\'s Draft] : {budget} points remaining\n' +
                            output + '```')

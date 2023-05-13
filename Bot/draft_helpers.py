@@ -33,7 +33,7 @@ def randomize_order():
     return draft_order
 
 
-def get_order():
+async def get_order():
     """Return the draft order."""
     conn = get_db()
     cur = conn.execute(
@@ -46,6 +46,7 @@ def get_order():
     draft_order = cur.fetchall()
     conn.close()
     return draft_order
+
 
 def pick_pokemon(pokemon, draft_round, userid, coach_budget):
     """Associate a pokemon with the coach who drafted it."""

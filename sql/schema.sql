@@ -10,7 +10,8 @@ CREATE TABLE coaches(
     netkd INTEGER NOT NULL DEFAULT 0,
     finalized BOOLEAN NOT NULL DEFAULT 0,
     budget INTEGER,
-    dorder INTEGER, 
+    dorder INTEGER,
+    transactions INTEGER,
     UNIQUE(discordid)
 );
 

@@ -52,8 +52,7 @@ async def on_ready():
 async def on_command_error(ctx, error):
     """Handle invalid commands."""
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('You either entered an invalid command or did not include \
-                        all the required argument(s): use !guide for more details.')
+        await ctx.send('You entered an invalid command or left out arguments (see !guide).')
 
 
 @bot.command()
