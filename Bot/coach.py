@@ -41,6 +41,7 @@ class Coach(commands.Cog):
         if status == 0:
             # update the draft_queue if the draft process is active
             if self.draft_cog.draft_round > 0:
+                # FIX THIS
                 coach_index = [i for i, coach in enumerate(
                     self.draft_cog.draft_queue) if coach[0] == ctx.author.id]
                 if coach_index:
@@ -74,7 +75,7 @@ class Coach(commands.Cog):
     @commands.command()
     async def info(self, ctx, user: discord.Member):
         """Display user information (pokemon, budget for now, update later)."""
-        coach_data = get_info(user.id)
+        coach_data = await get_info(user.id)
         output = ''
         if coach_data == 1:
             # FIX: shows this message even if valid coach; should still output budget (use separate queries in the helper function?)

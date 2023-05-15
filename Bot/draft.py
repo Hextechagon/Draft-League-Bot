@@ -59,11 +59,11 @@ class Draft(commands.Cog):
             await ctx.send(':x: The draft order has not been generated yet.')
         else:
             output = ''
-            for coach in get_order():
+            for coach in await get_order():
                 user = await self.bot.fetch_user(coach[1])
                 username = user.name
                 output += str(coach[0]) + '. ' + username + '\n'
-                await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
+            await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
 
     async def get_next(self):
         """Determine the next coach in the drafting process."""
@@ -98,12 +98,9 @@ class Draft(commands.Cog):
             self.skipped_coaches[prev_coach][0] += 1
             self.skipped_coaches[prev_coach][1].put(prev_round)
             # channel = self.bot.get_channel(1085977763833446401); await channel.send
-            await ctx.send(f':arrows_clockwise: <@{self.draft_queue[prev_coach][0]}> is \
-                               skipped; <@{self.draft_queue[self.draft_position][0]}> \
-                               is now on the clock.')
+            await ctx.send(f':arrows_clockwise: <@{self.draft_queue[prev_coach][0]}> is skipped; <@{self.draft_queue[self.draft_position][0]}> is now on the clock.')
         else:
-            await ctx.send(f':arrows_clockwise: <@\
-                               {self.draft_queue[self.draft_position][0]}> is now on the clock.')
+            await ctx.send(f':arrows_clockwise: <@{self.draft_queue[self.draft_position][0]}> is now on the clock.')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -114,8 +111,7 @@ class Draft(commands.Cog):
             await ctx.send(':x: You cannot use this command at the current stage.')
             return
         self.draft_round += 1
-        await ctx.send(f'The draft process has started.\n<@\
-                       {self.draft_queue[self.draft_position][0]}> is now on the clock.')
+        await ctx.send(f'The draft process has started.\n<@{self.draft_queue[self.draft_position][0]}> is now on the clock.')
         while self.num_finalized < len(self.draft_queue):
             # modify draft timer based on round and halve every time a coach is skipped
             if self.draft_round == 1:
@@ -140,14 +136,12 @@ class Draft(commands.Cog):
             status, pname, remaining_points = pick_pokemon(pokemon, round_skipped, ctx.author.id,
                                                            self.draft_queue[self.draft_position][1])
         if status == 0:
-            await ctx.send(f':white_check_mark: {pname} has been added to \
-                                  your team; you have {remaining_points} points left.')
+            await ctx.send(f':white_check_mark: {pname} has been added to your team; you have {remaining_points} points left.')
             self.draft_queue[self.draft_position][1] = remaining_points
             if skipped is False:
                 self.drafted = True
         elif status == 1:
-            await ctx.send(f':x: {pname} is not a valid Pokémon; you must enter the exact \
-                                  name stated in the Google Sheets.')
+            await ctx.send(f':x: {pname} is not a valid Pokémon; you must enter the exact name stated in the Google Sheets.')
         elif status == 2:
             await ctx.send(f':x: {pname} is already taken.')
         else:
@@ -162,10 +156,11 @@ class Draft(commands.Cog):
             await ctx.send(':x: You cannot use this command at the current stage.')
         elif ctx.author.id != self.draft_queue[self.draft_position][0]:
             skipped_coach = self.skipped_coaches.get(ctx.author.id)
+            print(list(skipped_coach[1].queue))
             if skipped_coach is None:
                 await ctx.send(':x: You are not a valid coach.')
             else:
-                if len(skipped_coach[1]) > 0:
+                if skipped_coach[1].qsize() > 0:
                     round_skipped = skipped_coach[1].get()
                     await self.acquire(ctx, pokemon, True, round_skipped)
                 else:
@@ -206,9 +201,13 @@ class Draft(commands.Cog):
     async def finish(self, ctx):
         """Specify that a coach completed the drafting phase."""
         finalize(ctx.author.id, self.draft_queue[self.draft_position][1])
-        coach_index = [i for i, coach in enumerate(
-            self.draft_queue) if coach[0] == ctx.author.id]
-        if coach_index:
+        coach_index = None
+        for index, coach in enumerate(self.draft_queue):
+            if coach[0] == ctx.author.id:
+                coach_index = index
+                break
+        if coach_index is not None:
+            # maybe add another check for if finalized already
             self.draft_queue[coach_index][2] = True
             user = await self.bot.fetch_user(ctx.author.id)
             username = user.name
