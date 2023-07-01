@@ -18,7 +18,7 @@ def randomize_order():
     if num_coaches < 3:
         conn.close()
         return num_coaches
-    # save the order in coaches table
+    # save the order in coaches table for recovery purposes
     for order, coach in enumerate(draft_order, 1):
         conn.execute(
             """     
@@ -54,7 +54,7 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
     words = pokemon.split('!')
     pname = ' '.join(words)
     conn = get_db()
-    # break this into functions if FA has similar code
+    # break this into functions if FA has similar code!!!
     cur = conn.execute(
         """
         SELECT coachid, cost
@@ -64,15 +64,19 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
         (pname, )
     )
     pokemon_info = cur.fetchone()
+    # check if the specified name is a valid Pokémon
     if pokemon_info is None:
         conn.close()
         return 1, pname, None
+    # check if the specified Pokémon is not already drafted
     if pokemon_info[0] is not None:
         conn.close()
         return 2, pname, None
+    # check if the coach has enough points to draft the specified Pokémon
     if coach_budget < pokemon_info[1]:
         conn.close()
         return 3, pname, None
+    # associate the specified Pokémon with the coach who drafted it
     conn.execute(
         """
         UPDATE pokemon
@@ -90,6 +94,7 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
 def finalize(userid, remaining_budget):
     """Mark a coach's status as finalized and update the remaining budget in the coaches table."""
     conn = get_db()
+    # set the coach's status as finalized and record the remaining budget
     conn.execute(
         """
         UPDATE coaches

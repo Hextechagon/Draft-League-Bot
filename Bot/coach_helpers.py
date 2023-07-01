@@ -94,7 +94,7 @@ async def get_leaderboard():
 
 async def get_info(userid):
     """Return the information of a coach with userid."""
-    # TODO: (pokemon, round drafted, remaining budget), (match record, net kd, upcoming opponent)
+    # TODO: (pokemon, round drafted, remaining budget), (match record, net kd, upcoming opponent) and comment
     conn = get_db()
     if verify_coach(userid) == 0:
         cur = conn.execute(

@@ -41,10 +41,10 @@ async def upload_log():
 
 @bot.event
 async def on_ready():
-    """Display a connection message."""
+    """Display the bot connection status."""
     print(f'{bot.user.name} has connected to Discord!')
-    await bot.add_cog(Coach(bot))
     await bot.add_cog(Draft(bot))
+    await bot.add_cog(Coach(bot))
     upload_log.start()
 
 
@@ -52,7 +52,8 @@ async def on_ready():
 async def on_command_error(ctx, error):
     """Handle invalid commands."""
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('You entered an invalid command or left out arguments (see !guide).')
+        await ctx.send('You entered an invalid command or left out required arguments (use'
+                       ' !guide for help).')
 
 
 @bot.command()

@@ -16,12 +16,12 @@ class Coach(commands.Cog):
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
     async def register(self, ctx, user: discord.Member):
-        """Enter the specified server member into the draft league."""
+        """Enter the specified server member into the draft league, if applicable."""
         status = insert_coach(user.id, user.name)
         if status == 0:
             await ctx.send(f':white_check_mark: {user.name} has been registered as a coach.')
         elif status == 1:
-            await ctx.send(':x: The draft league is currently full.')
+            await ctx.send(':x: The draft league is already full.')
         else:
             await ctx.send(f':x: {user.name} is already a coach.')
 
@@ -39,18 +39,22 @@ class Coach(commands.Cog):
         """Replace a current coach with the specified server member (inherits previous data)."""
         status = replace_coach(user1.id, user2.id, user2.name)
         if status == 0:
-            # update the draft_queue if the draft process is active
+            # update the draft_queue with the new coach if the draft process is active
             if self.draft_cog.draft_round > 0:
-                # FIX THIS
-                coach_index = [i for i, coach in enumerate(
-                    self.draft_cog.draft_queue) if coach[0] == ctx.author.id]
-                if coach_index:
-                    self.draft_cog.draft_queue[coach_index][0] = user2.id
-                    retained_info = self.draft_cog.skipped_coaches.pop(
-                        user1.id)
-                    self.draft_cog.skipped_coaches[user2.id] = retained_info
-            await ctx.send(f':white_check_mark: {user1.name} has been replaced by \
-                           {user2.name} as a coach.')
+                # FIX THIS: clear queued picks
+                coach_index = None
+                # find the index of the old coach in draft_queue
+                for index, coach in enumerate(self.draft_cog.draft_queue):
+                    if coach[0] == user1.id:
+                        coach_index = index
+                        break
+                # update the old discordid in draft_queue and skipped_coaches with the new one
+                self.draft_cog.draft_queue[coach_index][0] = user2.id
+                retained_info = self.draft_cog.skipped_coaches.pop(
+                    user1.id)
+                self.draft_cog.skipped_coaches[user2.id] = retained_info
+            await ctx.send(f':white_check_mark: {user1.name} has been replaced by {user2.name}'
+                           ' as a coach.')
         elif status == 1:
             await ctx.send(f':x: {user1.name} is not a valid coach.')
         else:
@@ -79,7 +83,7 @@ class Coach(commands.Cog):
         coach_data = await get_info(user.id)
         output = ''
         if coach_data == 1:
-            # FIX: shows this message even if valid coach; should still output budget (use separate queries in the helper function?)
+            # FIX: display more information (should still output budget)
             output += f'{user.name} has not drafted yet.'
             await ctx.send(':warning: ' + output)
         elif coach_data == 2:
