@@ -6,13 +6,14 @@ Commands:
 
 !register <@user>  
 !replace <@old_coach> <@new_coach>
+!ename <@user> old_name new_name TODO change the display name of selected coach
 !ranking
 !info <@user>
 
 !randomize
 !order
 !begin
-!select pokemon_name TODO check if skipped before, use skipped round when drafting first
+!select pokemon_name
 !preselect??? TODO
 !edit previous_pokemon new_pokemon TODO
 !etime <@user> amount TODO
@@ -21,7 +22,7 @@ Commands:
 !reenter <@user> TODO
 !fadd pokemon_name TODO force add pokemon by hoster
 !fremove pokemon_name TODO force remove pokemon by hoster
-!setpos <@user> TODO set draft position to specified user (interrupt current timer if necessary)
+!setpos <@user> TODO set draft position to specified user (interrupt current timer if necessary); skip option?
 !eskipped <@user> amount TODO modify the number of times a coach has been skipped for timer calculation purposes
 !add <pokemon_list> TODO
 !remove <pokemon_list> TODO

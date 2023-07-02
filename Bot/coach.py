@@ -17,13 +17,14 @@ class Coach(commands.Cog):
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
     async def register(self, ctx, user: discord.Member):
         """Enter the specified server member into the draft league, if applicable."""
-        status = insert_coach(user.id, user.name)
+        status = insert_coach(user.id, user.display_name)
         if status == 0:
-            await ctx.send(f':white_check_mark: {user.name} has been registered as a coach.')
+            await ctx.send(f':white_check_mark: {user.display_name} has'
+                           ' been registered as a coach.')
         elif status == 1:
             await ctx.send(':x: The draft league is already full.')
         else:
-            await ctx.send(f':x: {user.name} is already a coach.')
+            await ctx.send(f':x: {user.display_name} is already a coach.')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -37,7 +38,7 @@ class Coach(commands.Cog):
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
     async def replace(self, ctx, user1: discord.Member, user2: discord.Member):
         """Replace a current coach with the specified server member (inherits previous data)."""
-        status = replace_coach(user1.id, user2.id, user2.name)
+        status = replace_coach(user1.id, user2.id, user2.display_name)
         if status == 0:
             # update the draft_queue with the new coach if the draft process is active
             if self.draft_cog.draft_round > 0:
@@ -48,12 +49,12 @@ class Coach(commands.Cog):
                 retained_info = self.draft_cog.skipped_coaches.pop(
                     user1.id)
                 self.draft_cog.skipped_coaches[user2.id] = retained_info
-            await ctx.send(f':white_check_mark: {user1.name} has been replaced by {user2.name}'
-                           ' as a coach.')
+            await ctx.send(f':white_check_mark: {user1.display_name} has been replaced'
+                           f' by {user2.display_name} as a coach.')
         elif status == 1:
-            await ctx.send(f':x: {user1.name} is not a valid coach.')
+            await ctx.send(f':x: {user1.display_name} is not a valid coach.')
         else:
-            await ctx.send(f':x: {user2.name} is already a coach.')
+            await ctx.send(f':x: {user2.display_name} is already a coach.')
 
     @commands.command()
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
@@ -67,7 +68,7 @@ class Coach(commands.Cog):
         else:
             for rank, coach in enumerate(leaderboard, 1):
                 user = await self.bot.fetch_user(coach[0])
-                username = user.name
+                username = user.display_name
                 output += str(rank) + '. ' + username + '\n'
             await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
 
@@ -79,10 +80,10 @@ class Coach(commands.Cog):
         output = ''
         if coach_data == 1:
             # FIX: display more information (should still output budget)
-            output += f'{user.name} has not drafted yet.'
+            output += f'{user.display_name} has not drafted yet.'
             await ctx.send(':warning: ' + output)
         elif coach_data == 2:
-            output += f'{user.name} is not a valid coach.'
+            output += f'{user.display_name} is not a valid coach.'
             await ctx.send(':x: ' + output)
         else:
             budget = 125
@@ -90,8 +91,8 @@ class Coach(commands.Cog):
                 output += str(pokemon[0]) + '. ' + \
                     pokemon[1] + f' ({pokemon[2]})\n'
                 budget -= pokemon[2]
-            await ctx.send('```yaml\n[' + user.name + f'\'s Draft] : {budget} points remaining\n' +
-                           output + '```')
+            await ctx.send('```yaml\n[' + user.display_name + f'\'s Draft] : {budget}'
+                           ' points remaining\n' + output + '```')
 
     @register.error
     @replace.error

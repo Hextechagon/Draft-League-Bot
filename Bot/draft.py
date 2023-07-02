@@ -3,7 +3,7 @@ import datetime
 import asyncio
 import queue
 import discord
-# import pytz
+import pytz
 from discord.ext import commands
 from draft_helpers import randomize_order, get_order, pick_pokemon, finalize
 
@@ -27,6 +27,8 @@ class Draft(commands.Cog):
         self.drafted = False
         self.draft_deadline = None
         self.num_finalized = 0
+        self.timezone = pytz.timezone('US/Eastern')
+
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -49,7 +51,7 @@ class Draft(commands.Cog):
                 self.draft_queue.append([coach[0], 125, False])
                 self.skipped_coaches[coach[0]] = [0, queue.Queue(), order - 1]
                 user = await self.bot.fetch_user(coach[0])
-                username = user.name
+                username = user.display_name
                 output += str(order) + '. ' + username + '\n'
             # display the order of the draft and change the status to active
             await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
@@ -68,7 +70,7 @@ class Draft(commands.Cog):
             output = ''
             for coach in await get_order():
                 user = await self.bot.fetch_user(coach[1])
-                username = user.name
+                username = user.display_name
                 output += str(coach[0]) + '. ' + username + '\n'
             await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
 
@@ -96,31 +98,27 @@ class Draft(commands.Cog):
         # CHANGE DURATION FROM MINUTES TO HOURS AFTER TESTING
         self.draft_deadline = current_time + \
             datetime.timedelta(minutes=duration)
+        converted_time = self.draft_deadline.astimezone(self.timezone).strftime('%Y-%m-%d %H:%M')
+        did = self.draft_queue[self.draft_position][0]
+        await ctx.send(f':alarm_clock: <@{did}>'
+                       f' is now on the clock (draft by'
+                       f' {converted_time} EST).')
         # keep track of the draft time
         while current_time < self.draft_deadline:
             if self.drafted is True:
                 break
             await asyncio.sleep(2)
             current_time = datetime.datetime.now()
-        # save the previous information and advance the draft position
-        prev_pos = self.draft_position
-        prev_round = self.draft_round
+        if self.drafted is False:
+            # update skipped_coaches if the previous coach did not draft within the allotted time
+            self.skipped_coaches[did][0] += 1
+            self.skipped_coaches[did][1].put(self.draft_round)
+            await ctx.send(f':arrows_clockwise: <@{did}> is skipped.')
         await self.get_next()
         # keep advancing the draft position until reaching a non-finalized coach
         while self.draft_queue[self.draft_position][2] is True and self.num_finalized < \
                 len(self.draft_queue):
             await self.get_next()
-        if self.drafted is False:
-            # update skipped_coaches if the previous coach did not draft within the allotted time
-            prev_id = self.draft_queue[prev_pos]
-            self.skipped_coaches[prev_id][0] += 1
-            self.skipped_coaches[prev_id][1].put(prev_round)
-            await ctx.send(f':arrows_clockwise: <@{prev_id}> is'
-                           f' skipped; <@{self.draft_queue[self.draft_position][0]}> is now'
-                           f'on the clock (draft by ).')
-        else: 
-            await ctx.send(f':arrows_clockwise: <@{self.draft_queue[self.draft_position][0]}>'
-                           f' is now on the clock (draft by ).')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -131,8 +129,7 @@ class Draft(commands.Cog):
             await ctx.send(':x: You cannot use this command at the current stage.')
             return
         self.draft_round += 1
-        await ctx.send(f'The draft has started.\n<@{self.draft_queue[self.draft_position][0]}>'
-                       f' is now on the clock (draft by ).')
+        await ctx.send(':scroll: The draft has started.')
         while self.num_finalized < len(self.draft_queue):
             # modify draft timer based on round
             if self.draft_round == 1:
@@ -181,22 +178,26 @@ class Draft(commands.Cog):
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
     async def select(self, ctx, pokemon):
         """Add the specified pokemon to the coach's party."""
+        skipped_coach = self.skipped_coaches.get(ctx.author.id)
         if self.draft_round < 1:
             await ctx.send(':x: You cannot use this command at the current stage.')
         # check if user issuing command is the coach in the current iteration of draft_position
         elif ctx.author.id != self.draft_queue[self.draft_position][0]:
-            skipped_coach = self.skipped_coaches.get(ctx.author.id)
             if skipped_coach is None:
                 await ctx.send(':x: You are not a valid coach.')
             else:
                 # handle skipped coaches drafting
                 if skipped_coach[1].qsize() > 0:
-                    round_skipped = skipped_coach[1].get()
-                    await self.acquire(ctx, pokemon, True, skipped_coach[2], round_skipped)
+                    await self.acquire(ctx, pokemon, True, skipped_coach[2],
+                                       skipped_coach[1].get())
                 else:
                     await ctx.send(':x: It is not your turn to draft yet.')
         else:
-            await self.acquire(ctx, pokemon, False, self.draft_position)
+            if not skipped_coach[1].empty():
+                # fulfill previously skipped picks first if coach is in current draft_position
+                await self.acquire(ctx, pokemon, True, self.draft_position, skipped_coach[1].get())
+            else:
+                await self.acquire(ctx, pokemon, False, self.draft_position)
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -236,7 +237,7 @@ class Draft(commands.Cog):
             # set the coach's finalized status in draft_queue as true
             self.draft_queue[coach_info[2]][2] = True
             user = await self.bot.fetch_user(ctx.author.id)
-            username = user.name
+            username = user.display_name
             await ctx.send(f':white_check_mark: {username} has finished drafting.')
             self.num_finalized += 1
             if coach_info[2] == self.draft_position:
