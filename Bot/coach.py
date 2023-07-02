@@ -41,15 +41,10 @@ class Coach(commands.Cog):
         if status == 0:
             # update the draft_queue with the new coach if the draft process is active
             if self.draft_cog.draft_round > 0:
-                # FIX THIS: clear queued picks
-                coach_index = None
-                # find the index of the old coach in draft_queue
-                for index, coach in enumerate(self.draft_cog.draft_queue):
-                    if coach[0] == user1.id:
-                        coach_index = index
-                        break
+                # need fix: clear queued picks!!!
+                coach_info = self.draft_cog.skipped_coaches.get(user1.id)
                 # update the old discordid in draft_queue and skipped_coaches with the new one
-                self.draft_cog.draft_queue[coach_index][0] = user2.id
+                self.draft_cog.draft_queue[coach_info[2]][0] = user2.id
                 retained_info = self.draft_cog.skipped_coaches.pop(
                     user1.id)
                 self.draft_cog.skipped_coaches[user2.id] = retained_info
@@ -62,7 +57,7 @@ class Coach(commands.Cog):
 
     @commands.command()
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
-    async def rank(self, ctx):
+    async def ranking(self, ctx):
         """Display the leaderboard containing all current coaches."""
         leaderboard = await get_leaderboard()
         output = ''

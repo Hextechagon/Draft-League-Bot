@@ -9,6 +9,7 @@ from draft_helpers import randomize_order, get_order, pick_pokemon, finalize
 
 
 # pylint: disable=R0902
+# pylint: disable=R0913
 class Draft(commands.Cog):
     """Draft class."""
 
@@ -17,8 +18,7 @@ class Draft(commands.Cog):
         self.bot = bot
         # stores [discordid, budget, finalized]
         self.draft_queue = []
-        # maybe change key to draft queue index???
-        # stores discordid : [# times skipped, skipped round(s) queue]
+        # stores discordid : [# times skipped, skipped round(s) queue, index in draft_queue]
         self.skipped_coaches = {}
         # -3 = end of FA, -2 = end of draft, -1 = order not generated yet
         # 0 = order generated, but draft not started yet 1+ = draft active
@@ -47,7 +47,7 @@ class Draft(commands.Cog):
             for order, coach in enumerate(random_order, 1):
                 # populate draft_queue and skipped_coaches with the randomized coaches
                 self.draft_queue.append([coach[0], 125, False])
-                self.skipped_coaches[coach[0]] = [0, queue.Queue()]
+                self.skipped_coaches[coach[0]] = [0, queue.Queue(), order - 1]
                 user = await self.bot.fetch_user(coach[0])
                 username = user.name
                 output += str(order) + '. ' + username + '\n'
@@ -151,22 +151,22 @@ class Draft(commands.Cog):
         # put a message with more information (e.g. FA began and number of trades)
         await ctx.send('The draft has ended.')
 
-    async def acquire(self, ctx, pokemon, skipped, round_skipped=0):
+    async def acquire(self, ctx, pokemon, skipped, position, round_skipped=0):
         """Reduce redundancy in the select command."""
         if skipped is False:
             # handle normal drafting
             status, pname, remaining_points = pick_pokemon(pokemon, self.draft_round, ctx.author.id,
-                                                           self.draft_queue[self.draft_position][1])
+                                                           self.draft_queue[position][1])
         else:
-            # handle skipped coach drafting (last argument incorrect)
+            # handle skipped coach drafting
             status, pname, remaining_points = pick_pokemon(pokemon, round_skipped, ctx.author.id,
-                                                           self.draft_queue[self.draft_position][1])
+                                                           self.draft_queue[position][1])
         if status == 0:
             await ctx.send(f':white_check_mark: {pname} has been added to your team; you have'
                            f' {remaining_points} points left.')
-            # fix this too!!! pass in budget maybe
-            self.draft_queue[self.draft_position][1] = remaining_points
+            self.draft_queue[position][1] = remaining_points
             if skipped is False:
+                # end the timer if the selection is not from a skipped coach
                 self.drafted = True
         elif status == 1:
             await ctx.send(f':x: {pname} is not a valid Pokémon; you must enter the exact name'
@@ -189,14 +189,14 @@ class Draft(commands.Cog):
             if skipped_coach is None:
                 await ctx.send(':x: You are not a valid coach.')
             else:
-                # handle potential skipped coaches drafting
+                # handle skipped coaches drafting
                 if skipped_coach[1].qsize() > 0:
                     round_skipped = skipped_coach[1].get()
-                    await self.acquire(ctx, pokemon, True, round_skipped)
+                    await self.acquire(ctx, pokemon, True, skipped_coach[2], round_skipped)
                 else:
                     await ctx.send(':x: It is not your turn to draft yet.')
         else:
-            await self.acquire(ctx, pokemon, False)
+            await self.acquire(ctx, pokemon, False, self.draft_position)
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -214,7 +214,7 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
-    async def dtime(self, ctx, action, amount):
+    async def etime(self, ctx, user: discord.Member, amount):
         """Modify the amount of time a coach has for drafting."""
         # TODO
 
@@ -231,19 +231,15 @@ class Draft(commands.Cog):
     async def finish(self, ctx):
         """Specify that a coach completed the drafting phase."""
         finalize(ctx.author.id, self.draft_queue[self.draft_position][1])
-        coach_index = None
-        for index, coach in enumerate(self.draft_queue):
-            if coach[0] == ctx.author.id:
-                coach_index = index
-                break
-        if coach_index is not None and self.draft_queue[coach_index][2] is False:
+        coach_info = self.skipped_coaches.get(ctx.author.id)
+        if coach_info is not None and self.draft_queue[coach_info[2]][2] is False:
             # set the coach's finalized status in draft_queue as true
-            self.draft_queue[coach_index][2] = True
+            self.draft_queue[coach_info[2]][2] = True
             user = await self.bot.fetch_user(ctx.author.id)
             username = user.name
             await ctx.send(f':white_check_mark: {username} has finished drafting.')
             self.num_finalized += 1
-            if coach_index == self.draft_position:
+            if coach_info[2] == self.draft_position:
                 # stop draft timer if user is the coach in the current draft_position
                 self.drafted = True
         else:
@@ -252,7 +248,7 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
-    async def reenter(self, ctx):
+    async def reenter(self, ctx, user: discord.Member):
         """Re-enter a finalized coach into the draft."""
         # maybe need a finalize function for hoster as well (or put in finish function)
 
