@@ -1,4 +1,9 @@
-"""Commands for coaches."""
+"""Commands for coaches.
+!register <@user>  
+!replace <@old_coach> <@new_coach>
+!ranking
+!info <@user>
+"""
 import discord
 from discord.ext import commands
 from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info

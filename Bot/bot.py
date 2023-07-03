@@ -1,43 +1,7 @@
 """Main file that listens and responds to commands.
-
 Commands:
 !log
 !guide
-
-!register <@user>  
-!replace <@old_coach> <@new_coach>
-!ranking
-!info <@user>
-
-!randomize
-!order
-!begin
-!select pokemon_name
-!preselect??? TODO
-!edit previous_pokemon new_pokemon TODO
-!etime <@user> amount TODO
-!resume TODO
-!finish
-!reenter <@user> TODO
-!fadd pokemon_name TODO force add pokemon by hoster
-!fremove pokemon_name TODO force remove pokemon by hoster
-!setpos <@user> TODO set draft position to specified user (interrupt current timer if necessary); skip option?
-!eskipped <@user> amount TODO modify the number of times a coach has been skipped for timer calculation purposes
-!add <pokemon_list> TODO
-!remove <pokemon_list> TODO
-!trade <@user> pokemon1 pokemon2 TODO
-
-!record showdown_link showdown_username1 <@user1> <@user2> TODO
-!forfeit <@user1> <@user2> TODO
-!mhistory week TODO show match id (show ff loss too)
-!match match_id TODO
-!kleader TODO pokemon kill leader ranking with owner next to pokemon name
-
-Notes: 
-- pokemon_list consists of pokemon names separated by one space
-- replace the space(s) with a ! if a pokemon name consists of multiple words
-- if someone the coach entrusted drafted for him/her within the draft duration and the hoster did not fadd it 
-before the draft deadline, the hoster has to use !eskipped to correct the time penalty associated with # skips
 *** TODO: adjust the channel restrictions and times when deploying!!!
 """
 import os

@@ -1,4 +1,28 @@
-"""Commands for drafting."""
+"""Commands for drafting.
+!randomize
+!order
+!begin
+!select pokemon_name
+!preselect TODO
+!edit previous_pokemon new_pokemon TODO
+!etime <@user> amount TODO
+!finish
+!reenter <@user> TODO
+!fadd pokemon_name TODO force add pokemon by hoster
+!fremove pokemon_name TODO force remove pokemon by hoster
+!setpos <@user> TODO set draft position to specified user (interrupt current timer if necessary); skip option?
+!eskipped <@user> amount TODO modify the number of times a coach has been skipped for timer calculation purposes
+!add <pokemon_list> TODO
+!remove <pokemon_list> TODO
+!trade <@user> pokemon1 pokemon2 TODO
+!resume TODO
+
+Notes: 
+- pokemon_list consists of pokemon names separated by one space
+- replace the space(s) with a ! if a pokemon name consists of multiple words
+- if someone the coach entrusted drafted for him/her within the draft duration and the hoster did not fadd it 
+before the draft deadline, the hoster has to use !eskipped to correct the time penalty associated with # skips
+"""
 import datetime
 import asyncio
 import queue
@@ -202,14 +226,15 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
-    async def preselect(self, ctx, *pokemon):
-        """Enable coaches to save picks for automatic selection."""
+    @check_channel('coaches')
+    async def preselect(self, ctx):
+        """Enable coaches to save picks for automatic selection in DMs."""
+        # TODO
 
     @commands.command()
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
-    async def edit(self, ctx, prev_pokemon, pokemon):
+    async def edit(self, ctx, prev_pokemon, new_pokemon):
         """Change the pick that a coach made before the next coach picks."""
         # TODO
 
@@ -218,13 +243,6 @@ class Draft(commands.Cog):
     @check_channel('draft-mons')
     async def etime(self, ctx, user: discord.Member, amount):
         """Modify the amount of time a coach has for drafting."""
-        # TODO
-
-    @commands.command()
-    @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
-    async def resume(self, ctx):
-        """Resume the bot processes after updates."""
         # TODO
 
     @commands.command()
@@ -249,27 +267,69 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def reenter(self, ctx, user: discord.Member):
         """Re-enter a finalized coach into the draft."""
         # maybe need a finalize function for hoster as well (or put in finish function)
 
     @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
+    async def fadd(self, ctx, pokemon):
+        """Force add the specified pokemon to the coach's party during draft."""
+        # TODO: see comment above
+        # recommend do remove before add to make sure budget not exceeded
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
+    async def fremove(self, ctx, pokemon):
+        """Force remove the specified pokemon from the coach's party during draft."""
+        # TODO: see comment above
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
+    async def setpos(self, ctx, user: discord.Member):
+        """Set draft position to the specified user, interrupting the current draft timer."""
+        # TODO: include skip option for coach at previous position
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
+    async def eskipped(self, ctx, user: discord.Member, amount):
+        """Modify the number of times a coach has been skipped for timer calculation purposes."""
+        # TODO:
+
+    @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
     async def add(self, ctx, *pokemon):
         """Add the specified pokemon(s) to the coach's party during FA."""
         # TODO: see comment above (ONLY available after drafting finished)
         # recommend do remove before add to make sure budget not exceeded
 
     @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
     async def remove(self, ctx, *pokemon):
         """Remove the specified pokemon(s) from the coach's party during FA."""
         # TODO: see comment above (ONLY available after drafting finished)
 
     @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
     async def trade(self, ctx, user: discord.Member, pokemon1, pokemon2):
         """Complete a trade with another coach."""
         # TODO: see comment above (ONLY available after drafting finished)
-        # recommend do remove before add to make sure budget not exceeded
+        # recommend do remove before add to make sure budget not exceeded, detect reaction for confirmation?
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
+    async def resume(self, ctx):
+        """Resume the bot processes after updates."""
+        # TODO think about what arguments and separate for draft?
 
     @randomize.error
     @begin.error
