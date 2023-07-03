@@ -6,6 +6,7 @@ import discord
 import pytz
 from discord.ext import commands
 from draft_helpers import randomize_order, get_order, pick_pokemon, finalize
+from db_conn import check_channel
 
 
 # pylint: disable=R0902
@@ -29,10 +30,9 @@ class Draft(commands.Cog):
         self.num_finalized = 0
         self.timezone = pytz.timezone('US/Eastern')
 
-
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def randomize(self, ctx):
         """Randomize the draft order."""
         # check if the order is already generated
@@ -59,7 +59,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def order(self, ctx):
         """Display the draft order list."""
         # check if the order has been generated
@@ -98,7 +98,8 @@ class Draft(commands.Cog):
         # CHANGE DURATION FROM MINUTES TO HOURS AFTER TESTING
         self.draft_deadline = current_time + \
             datetime.timedelta(minutes=duration)
-        converted_time = self.draft_deadline.astimezone(self.timezone).strftime('%Y-%m-%d %H:%M')
+        converted_time = self.draft_deadline.astimezone(
+            self.timezone).strftime('%Y-%m-%d %H:%M')
         did = self.draft_queue[self.draft_position][0]
         await ctx.send(f':alarm_clock: <@{did}>'
                        f' is now on the clock (draft by'
@@ -122,7 +123,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def begin(self, ctx):
         """Initiate the draft process and manage the timer until all coaches have finalized."""
         if self.draft_round != 0:
@@ -175,7 +176,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def select(self, ctx, pokemon):
         """Add the specified pokemon to the coach's party."""
         skipped_coach = self.skipped_coaches.get(ctx.author.id)
@@ -207,14 +208,14 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def edit(self, ctx, prev_pokemon, pokemon):
         """Change the pick that a coach made before the next coach picks."""
         # TODO
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def etime(self, ctx, user: discord.Member, amount):
         """Modify the amount of time a coach has for drafting."""
         # TODO
@@ -228,7 +229,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('draft-mons')
     async def finish(self, ctx):
         """Specify that a coach completed the drafting phase."""
         finalize(ctx.author.id, self.draft_queue[self.draft_position][1])

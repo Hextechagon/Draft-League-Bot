@@ -2,6 +2,7 @@
 import discord
 from discord.ext import commands
 from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info
+from db_conn import check_channel
 
 
 class Coach(commands.Cog):
@@ -14,7 +15,7 @@ class Coach(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def register(self, ctx, user: discord.Member):
         """Enter the specified server member into the draft league, if applicable."""
         status = insert_coach(user.id, user.display_name)
@@ -28,14 +29,14 @@ class Coach(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def bulk_register(self, ctx, *args: discord.Member):
         """Enter the specified server members into the draft league."""
         # TODO: status = bulk_insert(args)
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def replace(self, ctx, user1: discord.Member, user2: discord.Member):
         """Replace a current coach with the specified server member (inherits previous data)."""
         status = replace_coach(user1.id, user2.id, user2.display_name)
@@ -57,7 +58,7 @@ class Coach(commands.Cog):
             await ctx.send(f':x: {user2.display_name} is already a coach.')
 
     @commands.command()
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def ranking(self, ctx):
         """Display the leaderboard containing all current coaches."""
         leaderboard = await get_leaderboard()
@@ -73,7 +74,7 @@ class Coach(commands.Cog):
             await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
 
     @commands.command()
-    @commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+    @check_channel('coaches')
     async def info(self, ctx, user: discord.Member):
         """Display user information (pokemon, budget for now, update later)."""
         coach_data = await get_info(user.id)

@@ -1,7 +1,7 @@
 PRAGMA foreign_keys = ON;
 
 
---keep budget for post-draft changes (fill in after draft finalized)
+--username is for higher readability when checking the table content manually
 CREATE TABLE coaches(
     discordid INTEGER PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
@@ -9,7 +9,6 @@ CREATE TABLE coaches(
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
     finalized BOOLEAN NOT NULL DEFAULT 0,
-    budget INTEGER,
     dorder INTEGER,
     transactions INTEGER NOT NULL DEFAULT 3
 );

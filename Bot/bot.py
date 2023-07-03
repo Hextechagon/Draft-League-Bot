@@ -6,7 +6,6 @@ Commands:
 
 !register <@user>  
 !replace <@old_coach> <@new_coach>
-!ename <@user> old_name new_name TODO change the display name of selected coach
 !ranking
 !info <@user>
 
@@ -28,7 +27,11 @@ Commands:
 !remove <pokemon_list> TODO
 !trade <@user> pokemon1 pokemon2 TODO
 
-match commands go here: match history by week, match statistics, enter showdown replay to get data, pokemon statistics, archive?
+!record showdown_link showdown_username1 <@user1> <@user2> TODO
+!forfeit <@user1> <@user2> TODO
+!mhistory week TODO show match id (show ff loss too)
+!match match_id TODO
+!kleader TODO pokemon kill leader ranking with owner next to pokemon name
 
 Notes: 
 - pokemon_list consists of pokemon names separated by one space
@@ -44,6 +47,8 @@ from dotenv import load_dotenv
 from discord.ext import tasks, commands
 from coach import Coach
 from draft import Draft
+from match import Match
+from db_conn import check_channel
 
 
 load_dotenv()
@@ -61,6 +66,7 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     await bot.add_cog(Draft(bot))
     await bot.add_cog(Coach(bot))
+    await bot.add_cog(Match(bot))
     upload_log.start()
 
 
@@ -83,7 +89,7 @@ async def upload_log():
 
 @bot.command()
 @commands.has_role('Draft Host')
-@commands.check(lambda ctx: ctx.channel.id == 1114021526291890260)
+@check_channel('coaches')
 async def log(ctx):
     """Send the database file to a log channel every hour."""
     channel = bot.get_channel(1103773916327051394)

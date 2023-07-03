@@ -1,6 +1,7 @@
 """Establish database connection."""
 import sqlite3
 import pathlib
+from discord.ext import commands
 
 
 def get_db():
@@ -21,3 +22,10 @@ def comm_close(db_conn):
     """Commit and close the database connection."""
     db_conn.commit()
     db_conn.close()
+
+
+def check_channel(channel_name):
+    """Restrict a command to the specified channel."""
+    def predicate(ctx):
+        return ctx.channel.name == channel_name
+    return commands.check(predicate)
