@@ -1,14 +1,6 @@
 PRAGMA foreign_keys = ON;
 
 
---This is for testing only (insert via queries for actual bot)
---INSERT INTO coaches()
---VALUES 
---    (),
---    ();
-
---Test this by checking first and last pokemon and number of pokemon for each cost
---Check if every line ends with comma
 INSERT INTO pokemon(pname, cost)
 VALUES
     ('Chien-Pao', 19), 

@@ -37,6 +37,7 @@ class Coach(commands.Cog):
     @check_channel('coaches')
     async def bulk_register(self, ctx, *args: discord.Member):
         """Enter the specified server members into the draft league."""
+        # this will become the register function after completion
         # TODO: status = bulk_insert(args)
 
     @commands.command()
@@ -55,6 +56,8 @@ class Coach(commands.Cog):
                 retained_info = self.draft_cog.skipped_coaches.pop(
                     user1.id)
                 self.draft_cog.skipped_coaches[user2.id] = retained_info
+                # reset the draft time penalty for skipping
+                self.draft_cog.skipped_coaches[user2.id][0] = 0
             await ctx.send(f':white_check_mark: {user1.display_name} has been replaced'
                            f' by {user2.display_name} as a coach.')
         elif status == 1:

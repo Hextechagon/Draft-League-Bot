@@ -50,5 +50,5 @@ class Match(commands.Cog):
     @commands.has_role('Draft League')
     @check_channel('coaches')
     async def kleader(self, ctx):
-        """Display the top 10 Pokémon with the most kills in the current season."""
+        """Display the top 10 pokemon with the most kills in the current season."""
         # TODO

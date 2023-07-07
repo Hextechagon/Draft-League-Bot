@@ -2,6 +2,7 @@ PRAGMA foreign_keys = ON;
 
 
 --username is for higher readability when checking the table content manually
+--for recovery, have to store the number of times skipped and populate based on selection from pokemon table
 CREATE TABLE coaches(
     discordid INTEGER PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
@@ -9,8 +10,12 @@ CREATE TABLE coaches(
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
     finalized BOOLEAN NOT NULL DEFAULT 0,
+    budget INTEGER,
     dorder INTEGER,
-    transactions INTEGER NOT NULL DEFAULT 3
+    transactions INTEGER NOT NULL DEFAULT 3,
+    queued1 VARCHAR(50),
+    queued2 VARCHAR(50),
+    queued3 VARCHAR(50)
 );
 
 CREATE TABLE pokemon(

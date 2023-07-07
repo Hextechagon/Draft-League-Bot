@@ -48,35 +48,42 @@ async def get_order():
     return draft_order
 
 
-def pick_pokemon(pokemon, draft_round, userid, coach_budget):
-    """Associate a pokemon with the coach who drafted it."""
-    # convert the Pokémon name into the format stored in the database
+def valid_pokemon(pokemon):
+    """Check if the specified pokemon is a valid pokemon."""
+    # convert the pokemon name into the format stored in the database
     words = pokemon.split('!')
     pname = ' '.join(words)
     conn = get_db()
-    # break this into functions if FA has similar code!!!
     cur = conn.execute(
         """
-        SELECT coachid, cost
+        SELECT coachid, cost, pname
         FROM pokemon
         WHERE pname = ?
         """,
         (pname, )
     )
     pokemon_info = cur.fetchone()
-    # check if the specified name is a valid Pokémon
+    conn.close()
+    return pokemon_info
+
+
+def pick_pokemon(pokemon, draft_round, userid, coach_budget):
+    """Associate the specified pokemon with the coach who drafted it."""
+    pokemon_info = valid_pokemon(pokemon)
+    conn = get_db()
+    # check if the specified name is a valid pokemon
     if pokemon_info is None:
         conn.close()
-        return 1, pname, None
-    # check if the specified Pokémon is not already drafted
+        return 1, pokemon_info[2], None
+    # check if the specified pokemon is not already drafted
     if pokemon_info[0] is not None:
         conn.close()
-        return 2, pname, None
-    # check if the coach has enough points to draft the specified Pokémon
+        return 2, pokemon_info[2], None
+    # check if the coach has enough points to draft the specified pokemon
     if coach_budget < pokemon_info[1]:
         conn.close()
-        return 3, pname, None
-    # associate the specified Pokémon with the coach who drafted it
+        return 3, pokemon_info[2], None
+    # associate the specified pokemon with the coach who drafted it
     conn.execute(
         """
         UPDATE pokemon
@@ -84,11 +91,39 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
             round = ?
         WHERE pname = ?
         """,
-        (userid, draft_round, pname)
+        (userid, draft_round, pokemon_info[2])
     )
     conn.commit()
     conn.close()
-    return 0, pname, coach_budget - pokemon_info[1]
+    return 0, pokemon_info[2], coach_budget - pokemon_info[1]
+
+
+def remove_pokemon(pokemon, userid, coach_budget):
+    """Delete the specified pokemon from the coach's team."""
+    # NEED TO RETURN ROUND TOO
+    pokemon_info = valid_pokemon(pokemon)
+    conn = get_db()
+    # check if the specified name is a valid pokemon
+    if pokemon_info is None:
+        conn.close()
+        return 1, pokemon_info[2], None
+    # check if the specified pokemon belongs to the user issuing the command
+    if pokemon_info[0] != userid:
+        conn.close()
+        return 2, pokemon_info[2], None
+    # dissociate the pokemon from the coach who drafted it
+    conn.execute(
+        """
+        UPDATE pokemon
+        SET coachid = NULL,
+            round = NULL
+        WHERE pname = ?
+        """,
+        (pokemon_info[2], )
+    )
+    conn.commit()
+    conn.close()
+    return 0, pokemon_info[2], coach_budget + pokemon_info[1]
 
 
 def finalize(userid, remaining_budget):
@@ -106,3 +141,30 @@ def finalize(userid, remaining_budget):
     )
     conn.commit()
     conn.close()
+
+
+def verify_round(pokemon, rounds):
+    """Check if the specified pokemon was drafted in the specified round(s)."""
+    words = pokemon.split('!')
+    pname = ' '.join(words)
+    conn = get_db()
+    cur = conn.execute(
+        """
+        SELECT round
+        FROM pokemon
+        WHERE pname = ?
+        """,
+        (pname, )
+    )
+    pokemon_round = cur.fetchone()
+    conn.close()
+    if pokemon_round is None:
+        # invalid pokemon name
+        return 1, None
+    if pokemon_round[0] is None:
+        # undrafted pokemon
+        return 2, None
+    if pokemon_round in rounds:
+        return 0, pokemon_round[0]
+    # pokemon ineligible for editing
+    return 3, pokemon_round[0]
