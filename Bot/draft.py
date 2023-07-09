@@ -98,7 +98,7 @@ class Draft(commands.Cog):
                 output += str(coach[0]) + '. ' + username + '\n'
             await ctx.send('```yaml\n' + '[Draft Order]\n' + output + '```')
 
-    async def get_next(self):
+    async def get_next(self, ctx):
         """Determine the next coach in the drafting process."""
         if self.draft_round % 2 == 0:
             # advance the draft queue towards the left if the round is even
@@ -107,6 +107,7 @@ class Draft(commands.Cog):
             # increment the round when the wheel pick is reached
             else:
                 self.draft_round += 1
+                await ctx.send(f':track_next: Round {self.draft_round} has begun.')
         else:
             # advance the draft queue towards the right if the round is odd
             if self.draft_position != (len(self.draft_queue) - 1):
@@ -114,6 +115,7 @@ class Draft(commands.Cog):
             # increment the round when the wheel pick is reached
             else:
                 self.draft_round += 1
+                await ctx.send(f':track_next: Round {self.draft_round} has begun.')
 
     async def start_timer(self, ctx, current_time, duration):
         """Manage the timing of the drafting phase."""
@@ -146,11 +148,13 @@ class Draft(commands.Cog):
         else:
             self.prev_position[0] = self.draft_position
             self.prev_position[1] = False
-        await self.get_next()
+        await self.get_next(ctx)
         # keep advancing the draft position until reaching a non-finalized coach
         while self.draft_queue[self.draft_position][2] is True and self.num_finalized < \
                 len(self.draft_queue):
-            await self.get_next()
+            # ensure finalized coaches draft from round where they left off if they reenter
+            self.skipped_coaches[self.draft_queue[self.draft_position][0]][1].put(self.draft_round)
+            await self.get_next(ctx)
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -248,13 +252,12 @@ class Draft(commands.Cog):
             await ctx.send(f':white_check_mark: {pname} has been removed from your draft; you have'
                            f' {remaining_points} points left.')
             return 0
-        elif status == 1:
+        if status == 1:
             await ctx.send(f':x: {pname} is not a valid pokemon; you must enter the exact name'
                            ' stated in the Google Sheets.')
             return 1
-        else:
-            await ctx.send(f':x: {pname} is not currently in your draft.')
-            return 2
+        await ctx.send(f':x: {pname} is not currently in your draft.')
+        return 2
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -376,7 +379,7 @@ class Draft(commands.Cog):
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
     async def add(self, ctx, *pokemon):
-        """Add the specified pokemon(s) to the coach's party during FA."""
+        """Add the specified pokemon to the coach's party during FA."""
         # TODO: see comment above (ONLY available after drafting finished)
         # recommend do remove before add to make sure budget not exceeded
 
@@ -384,7 +387,7 @@ class Draft(commands.Cog):
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
     async def remove(self, ctx, *pokemon):
-        """Remove the specified pokemon(s) from the coach's party during FA."""
+        """Remove the specified pokemon from the coach's party during FA."""
         # TODO: see comment above (ONLY available after drafting finished)
 
     @commands.command()
@@ -401,6 +404,13 @@ class Draft(commands.Cog):
     async def resume(self, ctx):
         """Resume the bot processes after updates."""
         # TODO think about what arguments and separate for draft or take extra argument?
+        """get number of times skipped from skipped in database and add round to skipped queue 
+           if coach has not drafted a pokemon in the round (in the current round, add if the coach
+           did not have a chance to draft yet - draft position not yet passed coach position in round).
+           This makes sure that if a coach finalizes and reenters, their draft will start at round 
+           where they left off.
+        """
+
 
     @randomize.error
     @begin.error

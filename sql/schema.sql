@@ -12,10 +12,8 @@ CREATE TABLE coaches(
     finalized BOOLEAN NOT NULL DEFAULT 0,
     budget INTEGER,
     dorder INTEGER,
-    transactions INTEGER NOT NULL DEFAULT 3,
-    queued1 VARCHAR(50),
-    queued2 VARCHAR(50),
-    queued3 VARCHAR(50)
+    skipped INTEGER NOT NULL DEFAULT 0,
+    transactions INTEGER NOT NULL DEFAULT 3
 );
 
 CREATE TABLE pokemon(
