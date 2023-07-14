@@ -1,9 +1,7 @@
 """Commands for matches.
-!record showdown_link showdown_username1 <@user1> <@user2> TODO
-!forfeit <@user1> <@user2> TODO
+!record <@winner> <@loser> margin replay TODO
+!rrecord matchid TODO
 !mhistory week TODO show match id (show ff loss too)
-!match match_id TODO
-!kleader TODO pokemon kill leader ranking with owner next to pokemon name
 """
 import discord
 from discord.ext import commands
@@ -21,15 +19,15 @@ class Match(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('replays')
-    async def record(self, ctx, link, user1_sd, user1: discord.Member, user2: discord.Member):
-        """Analyze a match replay and save the resulting data."""
-        # TODO
+    async def record(self, ctx, winner: discord.Member, loser: discord.Member, margin, replay = None):
+        """Record the outcome of a match."""
+        # TODO: for ff loss use a special margin like -1
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @check_channel('coaches')
-    async def forfeit(self, ctx, user1: discord.Member, user2: discord.Member):
-        """Record a forfeit loss for user1 to user2."""
+    @check_channel('replays')
+    async def rrecord(self, ctx, matchid):
+        """Remove an existing match entry."""
         # TODO
 
     @commands.command()
@@ -39,16 +37,10 @@ class Match(commands.Cog):
         """Display the match history for a particular week."""
         # TODO
 
-    @commands.command()
-    @commands.has_role('Draft League')
-    @check_channel('coaches')
-    async def match(self, ctx, matchid):
-        """Display detailed statistics for a specific match."""
-        # TODO
-
-    @commands.command()
-    @commands.has_role('Draft League')
-    @check_channel('coaches')
-    async def kleader(self, ctx):
-        """Display the top 10 pokemon with the most kills in the current season."""
-        # TODO
+    @record.error
+    async def error_handler(self, ctx, error):
+        """Respond to discord.py errors."""
+        if isinstance(error, commands.MissingRole):
+            await ctx.send(':x: You do not have permission to use this command.')
+        elif isinstance(error, commands.errors.MemberNotFound):
+            await ctx.send(':x: Please specify valid server member(s).')

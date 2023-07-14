@@ -14,6 +14,9 @@
 !add <pokemon_list> TODO
 !remove <pokemon_list> TODO
 !trade <@user> pokemon1 pokemon2 TODO
+!removet tradeid TODO
+!accept tradeid TODO
+!trequests TODO
 !resume TODO
 
 Notes: 
@@ -28,7 +31,7 @@ import queue
 import discord
 import pytz
 from discord.ext import commands
-from draft_helpers import randomize_order, get_order, pick_pokemon, remove_pokemon, finalize, verify_round
+from draft_helpers import randomize_order, get_order, pick_pokemon, remove_pokemon, finalize, verify_round, edit_skipped
 from db_conn import check_channel
 
 
@@ -141,6 +144,7 @@ class Draft(commands.Cog):
             # update skipped_coaches if the previous coach did not draft within the allotted time
             self.skipped_coaches[did][0] += 1
             self.skipped_coaches[did][1].put(self.draft_round)
+            edit_skipped(did, self.skipped_coaches[did][0])
             await ctx.send(f':arrows_clockwise: <@{did}> is skipped.')
         if self.draft_position == self.prev_position[0]:
             self.prev_position[0] = self.draft_position
@@ -362,16 +366,17 @@ class Draft(commands.Cog):
     async def eskipped(self, ctx, user: discord.Member, amount: int):
         """Modify the number of times a coach has been skipped for timer calculation purposes."""
         coach_info = self.skipped_coaches.get(user.id)
-        if amount < 0 and coach_info is not None:
-            self.skipped_coaches[user.id][0] -= amount
-            await ctx.send(f'white_check_mark: The recorded number of times skipped for'
-                           f' {user.display_name} has been reduced to'
-                           f' {self.skipped_coaches[user.id][0]} times.')
-        elif amount >= 0 and coach_info is not None:
+        if coach_info is not None:
             self.skipped_coaches[user.id][0] += amount
-            await ctx.send(f'white_check_mark: The recorded number of times skipped for'
-                           f' {user.display_name} has been increased to'
-                           f' {self.skipped_coaches[user.id][0]} times.')
+            edit_skipped(user.id, self.skipped_coaches[user.id][0])
+            if amount < 0:
+                await ctx.send(f'white_check_mark: The recorded number of times skipped for'
+                               f' {user.display_name} has been reduced to'
+                               f' {self.skipped_coaches[user.id][0]} times.')
+            else:
+                await ctx.send(f'white_check_mark: The recorded number of times skipped for'
+                               f' {user.display_name} has been increased to'
+                               f' {self.skipped_coaches[user.id][0]} times.')
         else:
             await ctx.send('x: Please specify a valid coach.')
 
@@ -394,9 +399,36 @@ class Draft(commands.Cog):
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
     async def trade(self, ctx, user: discord.Member, pokemon1, pokemon2):
-        """Complete a trade with another coach."""
+        """Send a trade request to another coach."""
         # TODO: see comment above (ONLY available after drafting finished)
         # recommend do remove before add to make sure budget not exceeded, detect reaction for confirmation?
+        """
+        trading (decide return detailed error messages or general - be consistent with other commands):
+        - remove 2 mons, and add 2 mons to the proper new owners (save old mons' round number to insert valid round)
+        - possible error messages (see if covered by similar functions too): not free agency yet? (check if can trade before FA), first or second user is not a coach, 
+        first or second coach not enough budget to acquire traded mon, the specified mons do not belong to the respective users
+        """
+
+    @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
+    async def removet(self, ctx, tradid):
+        """Withdraw a trade request sent to another coach."""
+        # TODO
+
+    @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
+    async def accept(self, ctx, tradid):
+        """Accept an incoming trade request."""
+        # TODO:
+
+    @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
+    async def trequests(self, ctx):
+        """Display a list of all incoming trade requests."""
+        # TODO:
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -409,6 +441,16 @@ class Draft(commands.Cog):
            did not have a chance to draft yet - draft position not yet passed coach position in round).
            This makes sure that if a coach finalizes and reenters, their draft will start at round 
            where they left off.
+
+        restore draft_queue: [id, budget, finalized]
+        - get id and finalized order by dorder from coaches table
+        - for every coach, find the total budget used on all drafted mons and subtract it from the maximum budget (in same loop as populating draft_queue)
+
+        restore skipped_coaches (in same loop as populating draft_queue, make sure do this in initial filling too): id: num_skipped skipped_rounds_queue draft_position
+        - fill in num_skipped and draft_position using query result from draft_queue restoration (add skipped number to select)
+        - loop from first round to current round and add round to skipped_rounds_queue if no mon is drafted for the round***
+        - ***for the current round, don't add to queue if the draft position has not yet passed the coach position (if odd_round: check if coach position >= 
+        current draft position; if even_round: check if coach_position <= current draft position)
         """
 
 

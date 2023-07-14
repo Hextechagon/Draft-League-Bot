@@ -168,3 +168,18 @@ def verify_round(pokemon, rounds):
         return 0, pokemon_round[0]
     # pokemon ineligible for editing
     return 3, pokemon_round[0]
+
+
+def edit_skipped(userid, amount):
+    """Change the value of the number of skips for the specified user."""
+    conn = get_db()
+    conn.execute(
+        """
+        UPDATE coaches
+        SET skipped = ?
+        WHERE discordid = ?
+        """,
+        (amount, userid)
+    )
+    conn.commit()
+    conn.close()

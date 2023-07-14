@@ -61,6 +61,10 @@ case $1 in
     sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM pokemon'
     ;;
 
+  "trades")
+    sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM trades'
+    ;;
+
   "coaches")
     sqlite3 -batch -line var/CTLDL_Bot.sqlite3 'SELECT * FROM coaches'
     ;;

@@ -40,3 +40,25 @@ CREATE TABLE matches(
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
+
+CREATE TABLE trades(
+    tradeid INTEGER PRIMARY KEY,
+    p1name VARCHAR(50),
+    p2name VARCHAR(50),
+    coach1 INTEGER,
+    coach2 INTEGER,
+    CHECK (coach1 != coach2),
+    UNIQUE(p1name, p2name),
+    FOREIGN KEY(p1name) REFERENCES pokemon(pname)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+    FOREIGN KEY(p2name) REFERENCES pokemon(pname)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+    FOREIGN KEY(coach1) REFERENCES coaches(discordid) 
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+    FOREIGN KEY(coach2) REFERENCES coaches(discordid) 
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
