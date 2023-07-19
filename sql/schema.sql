@@ -29,14 +29,16 @@ CREATE TABLE pokemon(
 
 CREATE TABLE matches(
     matchid INTEGER PRIMARY KEY AUTOINCREMENT,
-    coach1 INTEGER,
-    coach2 INTEGER,
+    winner INTEGER,
+    loser INTEGER,
+    record INTEGER,
     mweek INTEGER NOT NULL,
-    CHECK (coach1 != coach2),
-    FOREIGN KEY(coach1) REFERENCES coaches(discordid) 
+    replay VARCHAR(100),
+    CHECK (winner != loser),
+    FOREIGN KEY(winner) REFERENCES coaches(discordid) 
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-    FOREIGN KEY(coach2) REFERENCES coaches(discordid) 
+    FOREIGN KEY(loser) REFERENCES coaches(discordid) 
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );

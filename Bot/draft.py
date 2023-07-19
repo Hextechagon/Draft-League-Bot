@@ -17,6 +17,7 @@
 !removet tradeid TODO
 !accept tradeid TODO
 !trequests TODO
+!status pokemon TODO
 !resume TODO
 
 Notes: 
@@ -31,7 +32,9 @@ import queue
 import discord
 import pytz
 from discord.ext import commands
-from draft_helpers import randomize_order, get_order, pick_pokemon, remove_pokemon, finalize, verify_round, edit_skipped
+from draft_helpers import (
+    randomize_order, get_order, pick_pokemon, remove_pokemon, edit_pokemon, finalize, 
+    verify_pokemon, edit_skipped)
 from db_conn import check_channel
 
 
@@ -192,11 +195,12 @@ class Draft(commands.Cog):
         """Helper function for commands involving selection."""
         if skipped is False:
             # handle normal drafting
-            status, pname, remaining_points = pick_pokemon(pokemon, self.draft_round, ctx.author.id,
+            status, pname, remaining_points = pick_pokemon([pokemon], self.draft_round, 
+                                                           ctx.author.id,
                                                            self.draft_queue[position][1])
         else:
             # handle skipped coach drafting
-            status, pname, remaining_points = pick_pokemon(pokemon, round_skipped, ctx.author.id,
+            status, pname, remaining_points = pick_pokemon([pokemon], round_skipped, ctx.author.id,
                                                            self.draft_queue[position][1])
         if status == 0:
             self.draft_queue[position][1] = remaining_points
@@ -249,7 +253,7 @@ class Draft(commands.Cog):
     async def delete(self, ctx, pokemon, position):
         """Helper function for commands involving removal."""
         coach_info = self.draft_queue[position]
-        status, pname, remaining_points = remove_pokemon(pokemon, coach_info[0], coach_info[1])
+        status, pname, remaining_points = remove_pokemon([pokemon], coach_info[0], coach_info[1])
         if status == 0:
             # update the coach's budget
             coach_info[1] = remaining_points
@@ -286,11 +290,11 @@ class Draft(commands.Cog):
                     # editable pick is not a wheel pick
                     editable_rounds.append(self.draft_round)
         # verify the prev_pokemon was drafted in a round that is currently eligible for replacement
-        verify_status, round_num = verify_round(prev_pokemon, editable_rounds)
+        verify_status, pokemon_info, _ = verify_pokemon(prev_pokemon, editable_rounds)
         if verify_status == 0:
-            delete_status = await self.delete(ctx, prev_pokemon, coach_info[2])
+            delete_status = await self.delete(ctx, [prev_pokemon], coach_info[2])
             if delete_status == 0:
-                await self.acquire(ctx, new_pokemon, True, coach_info[2], round_num)
+                await self.acquire(ctx, [new_pokemon], True, coach_info[2], pokemon_info[2])
         elif verify_status == 1:
             await ctx.send(f':x: {prev_pokemon} is an invalid pokemon name.')
         elif verify_status == 2:
@@ -361,6 +365,21 @@ class Draft(commands.Cog):
         # TODO: see comment above
 
     @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
+    async def add(self, ctx, *pokemon):
+        """Add the specified pokemon to the coach's party during FA."""
+        # TODO: see comment above (ONLY available after drafting finished)
+        # recommend do remove before add to make sure budget not exceeded
+
+    @commands.command()
+    @commands.has_role('Draft League')
+    @check_channel('draft-mons')
+    async def remove(self, ctx, *pokemon):
+        """Remove the specified pokemon from the coach's party during FA."""
+        # TODO: see comment above (ONLY available after drafting finished)
+
+    @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('draft-mons')
     async def eskipped(self, ctx, user: discord.Member, amount: int):
@@ -382,18 +401,10 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @check_channel('draft-mons')
-    async def add(self, ctx, *pokemon):
-        """Add the specified pokemon to the coach's party during FA."""
-        # TODO: see comment above (ONLY available after drafting finished)
-        # recommend do remove before add to make sure budget not exceeded
-
-    @commands.command()
-    @commands.has_role('Draft League')
-    @check_channel('draft-mons')
-    async def remove(self, ctx, *pokemon):
-        """Remove the specified pokemon from the coach's party during FA."""
-        # TODO: see comment above (ONLY available after drafting finished)
+    @check_channel('coaches')
+    async def status(self, ctx, pokemon):
+        """Check the availability of the specified pokemon."""
+        # TODO
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -455,12 +466,24 @@ class Draft(commands.Cog):
 
 
     @randomize.error
+    @order.error
     @begin.error
     @select.error
-    @reenter.error
+    @edit.error
     @etime.error
+    @finish.error
+    @reenter.error
+    @fadd.error
+    @fremove.error
+    @add.error
+    @remove.error
     @eskipped.error
     @trade.error
+    @removet.error
+    @accept.error
+    @trequests.error
+    @resume.error
+    @status.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

@@ -21,24 +21,18 @@ class Coach(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('coaches')
-    async def register(self, ctx, user: discord.Member):
-        """Enter the specified server member into the draft league, if applicable."""
-        status = insert_coach(user.id, user.display_name)
-        if status == 0:
-            await ctx.send(f':white_check_mark: {user.display_name} has'
-                           ' been registered as a coach.')
-        elif status == 1:
-            await ctx.send(':x: The draft league is already full.')
-        else:
-            await ctx.send(f':x: {user.display_name} is already a coach.')
-
-    @commands.command()
-    @commands.has_role('Draft Host')
-    @check_channel('coaches')
-    async def bulk_register(self, ctx, *args: discord.Member):
-        """Enter the specified server members into the draft league."""
-        # this will become the register function after completion
-        # TODO: status = bulk_insert(args)
+    async def register(self, ctx, *users: discord.Member):
+        """Enter the specified server member(s) into the draft league."""
+        for user in users:
+            status = insert_coach(user.id, user.display_name)
+            if status == 0:
+                await ctx.send(f':white_check_mark: {user.display_name} has'
+                            ' been registered as a coach.')
+            elif status == 1:
+                await ctx.send(':x: The draft league is full.')
+                return
+            else:
+                await ctx.send(f':x: {user.display_name} is already a coach.')
 
     @commands.command()
     @commands.has_role('Draft Host')

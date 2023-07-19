@@ -5,7 +5,7 @@
 """
 import discord
 from discord.ext import commands
-from match_helpers import *
+from match_helpers import insert_match, remove_match, get_history
 from db_conn import check_channel
 
 
@@ -19,7 +19,7 @@ class Match(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('replays')
-    async def record(self, ctx, winner: discord.Member, loser: discord.Member, margin, replay = None):
+    async def record(self, ctx, week, winner: discord.Member, loser: discord.Member, margin, replay = None):
         """Record the outcome of a match."""
         # TODO: for ff loss use a special margin like -1
 
@@ -35,9 +35,11 @@ class Match(commands.Cog):
     @check_channel('coaches')
     async def mhistory(self, ctx, week):
         """Display the match history for a particular week."""
-        # TODO
+        # TODO: coach1 won agaist coach2 (3-0): replay_link/no_replay
 
     @record.error
+    @rrecord.error
+    @mhistory.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

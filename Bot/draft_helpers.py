@@ -48,15 +48,15 @@ async def get_order():
     return draft_order
 
 
-def valid_pokemon(pokemon):
-    """Check if the specified pokemon is a valid pokemon."""
+def verify_pokemon(pokemon, rounds):
+    """Check if the specified pokemon is a valid pokemon and is draftble in the current round."""
     # convert the pokemon name into the format stored in the database
     words = pokemon.split('!')
     pname = ' '.join(words)
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT coachid, cost, pname
+        SELECT coachid, cost, round
         FROM pokemon
         WHERE pname = ?
         """,
@@ -64,67 +64,101 @@ def valid_pokemon(pokemon):
     )
     pokemon_info = cur.fetchone()
     conn.close()
-    return pokemon_info
+    if pokemon_info is None:
+        # invalid pokemon name
+        return 1, pokemon_info, pname
+    if pokemon_info[2] is None:
+        # undrafted pokemon
+        return 2, pokemon_info, pname
+    if pokemon_info[2] in rounds:
+        return 0, pokemon_info, pname
+    # pokemon ineligible for editing
+    return 3, pokemon_info, pname
 
 
 def pick_pokemon(pokemon, draft_round, userid, coach_budget):
     """Associate the specified pokemon with the coach who drafted it."""
-    pokemon_info = valid_pokemon(pokemon)
-    conn = get_db()
-    # check if the specified name is a valid pokemon
-    if pokemon_info is None:
-        conn.close()
-        return 1, pokemon_info[2], None
-    # check if the specified pokemon is not already drafted
-    if pokemon_info[0] is not None:
-        conn.close()
-        return 2, pokemon_info[2], None
-    # check if the coach has enough points to draft the specified pokemon
-    if coach_budget < pokemon_info[1]:
-        conn.close()
-        return 3, pokemon_info[2], None
-    # associate the specified pokemon with the coach who drafted it
-    conn.execute(
-        """
-        UPDATE pokemon
-        SET coachid = ?,
-            round = ?
-        WHERE pname = ?
-        """,
-        (userid, draft_round, pokemon_info[2])
-    )
+    formatted_names = []
+    for mon in pokemon:
+        _, pokemon_info, formatted_name = verify_pokemon(mon, [])
+        conn = get_db()
+        # check if the specified name is a valid pokemon
+        if pokemon_info is None:
+            conn.close()
+            return 1, formatted_name, None
+        # check if the specified pokemon is not already drafted
+        if pokemon_info[0] is not None:
+            conn.close()
+            return 2, formatted_name, None
+        # check if the coach has enough points to draft the specified pokemon
+        if coach_budget < pokemon_info[1]:
+            conn.close()
+            return 3, formatted_name, None
+        # associate the specified pokemon with the coach who drafted it
+        conn.execute(
+            """
+            UPDATE pokemon
+            SET coachid = ?,
+                round = ?
+            WHERE pname = ?
+            """,
+            (userid, draft_round, formatted_name)
+        )
+        coach_budget -= pokemon_info[1]
+        formatted_names.append(formatted_name)
     conn.commit()
     conn.close()
-    return 0, pokemon_info[2], coach_budget - pokemon_info[1]
+    # return 0, remaining budget, and a list with formatted names
+    return 0, formatted_names, coach_budget
 
 
 def remove_pokemon(pokemon, userid, coach_budget):
     """Delete the specified pokemon from the coach's team."""
-    # NEED TO RETURN ROUND TOO
-    pokemon_info = valid_pokemon(pokemon)
-    conn = get_db()
-    # check if the specified name is a valid pokemon
-    if pokemon_info is None:
-        conn.close()
-        return 1, pokemon_info[2], None
-    # check if the specified pokemon belongs to the user issuing the command
-    if pokemon_info[0] != userid:
-        conn.close()
-        return 2, pokemon_info[2], None
-    # dissociate the pokemon from the coach who drafted it
-    conn.execute(
-        """
-        UPDATE pokemon
-        SET coachid = NULL,
-            round = NULL
-        WHERE pname = ?
-        """,
-        (pokemon_info[2], )
-    )
+    # MAYBE HAVE TO RETURN ROUND HERE
+    formatted_names = []
+    for mon in pokemon:
+        _, pokemon_info, formatted_name = verify_pokemon(mon, [])
+        conn = get_db()
+        # check if the specified name is a valid pokemon
+        if pokemon_info is None:
+            conn.close()
+            return 1, formatted_name, None
+        # check if the specified pokemon belongs to the user issuing the command
+        if pokemon_info[0] != userid:
+            conn.close()
+            return 2, formatted_name, None
+        # dissociate the pokemon from the coach who drafted it
+        conn.execute(
+            """
+            UPDATE pokemon
+            SET coachid = NULL,
+                round = NULL
+            WHERE pname = ?
+            """,
+            (formatted_name, )
+        )
+        coach_budget += pokemon_info[1]
+        formatted_names.append(formatted_name)
     conn.commit()
     conn.close()
-    return 0, pokemon_info[2], coach_budget + pokemon_info[1]
+    return 0, formatted_names, coach_budget
 
+
+def edit_pokemon(old_pokemon, new_pokemon, editable_rounds):
+    """Replace a drafted pokemon with another undrafted one."""
+     """
+        verify_status, pokemon_info, _ = verify_pokemon(prev_pokemon, editable_rounds)
+        if verify_status == 0:
+            delete_status = await self.delete(ctx, [prev_pokemon], coach_info[2])
+            if delete_status == 0:
+                await self.acquire(ctx, [new_pokemon], True, coach_info[2], pokemon_info[2])
+        elif verify_status == 1:
+            await ctx.send(f':x: {prev_pokemon} is an invalid pokemon name.')
+        elif verify_status == 2:
+            await ctx.send(f':x: {prev_pokemon} is an undrafted pokemon.')
+        else:
+            await ctx.send(f':x: {prev_pokemon} is ineligible for replacement at this time.')
+    """
 
 def finalize(userid, remaining_budget):
     """Mark a coach's status as finalized and update the remaining budget in the coaches table."""
@@ -141,33 +175,6 @@ def finalize(userid, remaining_budget):
     )
     conn.commit()
     conn.close()
-
-
-def verify_round(pokemon, rounds):
-    """Check if the specified pokemon was drafted in the specified round(s)."""
-    words = pokemon.split('!')
-    pname = ' '.join(words)
-    conn = get_db()
-    cur = conn.execute(
-        """
-        SELECT round
-        FROM pokemon
-        WHERE pname = ?
-        """,
-        (pname, )
-    )
-    pokemon_round = cur.fetchone()
-    conn.close()
-    if pokemon_round is None:
-        # invalid pokemon name
-        return 1, None
-    if pokemon_round[0] is None:
-        # undrafted pokemon
-        return 2, None
-    if pokemon_round in rounds:
-        return 0, pokemon_round[0]
-    # pokemon ineligible for editing
-    return 3, pokemon_round[0]
 
 
 def edit_skipped(userid, amount):
