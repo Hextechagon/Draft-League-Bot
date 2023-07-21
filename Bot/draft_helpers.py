@@ -146,18 +146,18 @@ def remove_pokemon(pokemon, userid, coach_budget):
 
 def edit_pokemon(old_pokemon, new_pokemon, editable_rounds):
     """Replace a drafted pokemon with another undrafted one."""
-     """
-        verify_status, pokemon_info, _ = verify_pokemon(prev_pokemon, editable_rounds)
-        if verify_status == 0:
-            delete_status = await self.delete(ctx, [prev_pokemon], coach_info[2])
-            if delete_status == 0:
-                await self.acquire(ctx, [new_pokemon], True, coach_info[2], pokemon_info[2])
-        elif verify_status == 1:
-            await ctx.send(f':x: {prev_pokemon} is an invalid pokemon name.')
-        elif verify_status == 2:
-            await ctx.send(f':x: {prev_pokemon} is an undrafted pokemon.')
-        else:
-            await ctx.send(f':x: {prev_pokemon} is ineligible for replacement at this time.')
+    """
+    verify_status, pokemon_info, _ = verify_pokemon(prev_pokemon, editable_rounds)
+    if verify_status == 0:
+        delete_status = await self.delete(ctx, [prev_pokemon], coach_info[2])
+        if delete_status == 0:
+            await self.acquire(ctx, [new_pokemon], True, coach_info[2], pokemon_info[2])
+    elif verify_status == 1:
+        await ctx.send(f':x: {prev_pokemon} is an invalid pokemon name.')
+    elif verify_status == 2:
+        await ctx.send(f':x: {prev_pokemon} is an undrafted pokemon.')
+    else:
+        await ctx.send(f':x: {prev_pokemon} is ineligible for replacement at this time.')
     """
 
 def finalize(userid, remaining_budget):

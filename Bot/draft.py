@@ -3,7 +3,7 @@
 !order
 !begin
 !select pokemon_name
-!preselect TODO
+!preselect TODO: non-essential
 !edit perv_pokemon new_pokemon
 !etime minutes
 !finish (<@user>) TODO
@@ -389,11 +389,11 @@ class Draft(commands.Cog):
             self.skipped_coaches[user.id][0] += amount
             edit_skipped(user.id, self.skipped_coaches[user.id][0])
             if amount < 0:
-                await ctx.send(f'white_check_mark: The recorded number of times skipped for'
+                await ctx.send(f':white_check_mark: The recorded number of times skipped for'
                                f' {user.display_name} has been reduced to'
                                f' {self.skipped_coaches[user.id][0]} times.')
             else:
-                await ctx.send(f'white_check_mark: The recorded number of times skipped for'
+                await ctx.send(f':white_check_mark: The recorded number of times skipped for'
                                f' {user.display_name} has been increased to'
                                f' {self.skipped_coaches[user.id][0]} times.')
         else:
@@ -404,7 +404,14 @@ class Draft(commands.Cog):
     @check_channel('coaches')
     async def status(self, ctx, pokemon):
         """Check the availability of the specified pokemon."""
-        # TODO
+        availability, _, pname = verify_pokemon(pokemon, [])
+        if availability == 1:
+            await ctx.send(f':x: {pname} is not a valid pokemon; you must enter the exact name'
+                           ' stated in the Google Sheets.')
+        elif availability == 2:
+            await ctx.send(f':white_check_mark: {pname} is available.')
+        else:
+            await ctx.send(f':x: {pname} is not available.')
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -491,4 +498,4 @@ class Draft(commands.Cog):
         elif isinstance(error, commands.errors.MemberNotFound):
             await ctx.send(':x: Please specify valid server member(s).')
         elif isinstance(error, TypeError):
-            await ctx.send('Please enter an integer for the last argument.')
+            await ctx.send(':x: Please enter an integer for the last argument.')

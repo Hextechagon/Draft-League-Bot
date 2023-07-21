@@ -34,7 +34,6 @@ CREATE TABLE matches(
     record INTEGER,
     mweek INTEGER NOT NULL,
     replay VARCHAR(100),
-    CHECK (winner != loser),
     FOREIGN KEY(winner) REFERENCES coaches(discordid) 
     ON UPDATE CASCADE
     ON DELETE CASCADE,
@@ -50,7 +49,6 @@ CREATE TABLE trades(
     coach1 INTEGER,
     coach2 INTEGER,
     CHECK (coach1 != coach2),
-    UNIQUE(p1name, p2name),
     FOREIGN KEY(p1name) REFERENCES pokemon(pname)
     ON UPDATE CASCADE
     ON DELETE CASCADE,

@@ -3,26 +3,44 @@ import sqlite3
 from db_conn import get_db
 
 
-def insert_match(winner, loser, replay):
+def insert_match(winner, loser, week, margin, replay):
     """Insert the draft battle result into the matches table."""
-    # TODO: have to check if coach combo has already been entered
     conn = get_db()
     try:
         cur = conn.execute(
             """
             SELECT COUNT(*) AS ct
-            FROM coaches
-            """
+            FROM matches
+            WHERE (winner = ? AND loser = ?) OR (loser = ? AND winner = ?)
+            """,
+            (winner, loser, winner, loser)
         )
-        # check if the draft league is already full
-        if cur.fetchone()[0] == 16:
+        # check if the match has already been entered
+        if cur.fetchone()[0] > 0:
             return 1
         conn.execute(
             """
-            INSERT INTO coaches(discordid, username)
-            VALUES (?, ?)
+            INSERT INTO matches(winner, loser, record, mweek, replay)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (userid, username)
+            (winner, loser, margin, week, replay)
+        )
+        # update the kill differential for each coach based on the margin
+        conn.execute(
+            """     
+            UPDATE coaches
+            SET netkd = netkd + ?
+            WHERE discordid = ?
+            """,
+            (margin, winner)
+        )
+        conn.execute(
+            """     
+            UPDATE coaches
+            SET netkd = netkd - ?
+            WHERE discordid = ?
+            """,
+            (margin, loser)
         )
         return 0
     except sqlite3.IntegrityError:
@@ -37,14 +55,14 @@ def remove_match(matchid):
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT matchid
+        SELECT winner, loser, record
         FROM matches
         WHERE matchid = ?
         """,
         (matchid, )
     )
-    mid = cur.fetchone()
-    if mid is None:
+    match_data = cur.fetchone()
+    if match_data is None:
         # invalid matchid
         conn.close()
         return 1
@@ -54,6 +72,27 @@ def remove_match(matchid):
         WHERE matchid = ?
         """,
         (matchid, )
+    )
+    margin = match_data[2]
+    # set the margin to 3 if the match is a forfeit loss (indicated by -1 record)
+    if margin == -1:
+        margin = 3
+    # revert the kill differential for each coach
+    conn.execute(
+        """     
+        UPDATE coaches
+        SET netkd = netkd + ?
+        WHERE discordid = ?
+        """,
+        (margin, match_data[1])
+    )
+    conn.execute(
+        """     
+        UPDATE coaches
+        SET netkd = netkd - ?
+        WHERE discordid = ?
+        """,
+        (margin, match_data[0])
     )
     conn.commit()
     conn.close()

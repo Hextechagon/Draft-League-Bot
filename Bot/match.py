@@ -1,6 +1,6 @@
 """Commands for matches.
-!record <@winner> <@loser> margin replay TODO
-!rrecord matchid TODO
+!record <@winner> <@loser> margin replay TODO: double ff loss (non essential)
+!rrecord matchid TODO double ff loss (non essential)
 !mhistory week TODO show match id (show ff loss too)
 """
 import discord
@@ -19,23 +19,38 @@ class Match(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('replays')
-    async def record(self, ctx, week, winner: discord.Member, loser: discord.Member, margin, replay = None):
-        """Record the outcome of a match."""
-        # TODO: for ff loss use a special margin like -1
+    async def record(self, ctx, week: int, winner: discord.Member, loser: discord.Member, margin, replay = None):
+        """Record the outcome of a match (enter -1 for margin if forfeit win/loss)."""
+        if winner == loser:
+            await ctx.send(':x: Please specify two different coaches.')
+            return
+        status = insert_match(winner.id, loser.id, week, margin, replay)
+        if status == 0:
+            await ctx.send(':white_check_mark: The match has been recorded.')
+        elif status == 1:
+            await ctx.send(':x: The match between the two coaches has already been'
+                           ' recorded for the specified week.')
+        else:
+            await ctx.send(':x: Please specify valid coaches.')
 
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('replays')
-    async def rrecord(self, ctx, matchid):
+    async def rrecord(self, ctx, matchid: int):
         """Remove an existing match entry."""
-        # TODO
+        status = remove_match(matchid)
+        if status == 0:
+            await ctx.send(':white_check_mark: The specified match has been removed.')
+        else:
+            await ctx.send(':x: Please specify a valid match ID.')
 
     @commands.command()
     @commands.has_role('Draft League')
     @check_channel('coaches')
-    async def mhistory(self, ctx, week):
+    async def mhistory(self, ctx, week: int):
         """Display the match history for a particular week."""
         # TODO: coach1 won agaist coach2 (3-0): replay_link/no_replay
+        # do not print none (deleting match does not move autoincrement up)
 
     @record.error
     @rrecord.error
@@ -46,3 +61,5 @@ class Match(commands.Cog):
             await ctx.send(':x: You do not have permission to use this command.')
         elif isinstance(error, commands.errors.MemberNotFound):
             await ctx.send(':x: Please specify valid server member(s).')
+        elif isinstance(error, TypeError):
+            await ctx.send('Please enter an integer argument where applicable.')
