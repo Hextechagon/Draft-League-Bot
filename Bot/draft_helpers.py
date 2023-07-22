@@ -33,7 +33,7 @@ def randomize_order():
     return draft_order
 
 
-async def get_order():
+def get_order():
     """Return the draft order."""
     conn = get_db()
     cur = conn.execute(
@@ -160,18 +160,18 @@ def edit_pokemon(old_pokemon, new_pokemon, editable_rounds):
         await ctx.send(f':x: {prev_pokemon} is ineligible for replacement at this time.')
     """
 
-def finalize(userid, remaining_budget):
-    """Mark a coach's status as finalized and update the remaining budget in the coaches table."""
+
+def finalize(userid, status):
+    """Mark a coach's status as finalized or unfinalized in the coaches table."""
     conn = get_db()
-    # set the coach's status as finalized and record the remaining budget
+    # set the coach's status as finalized or unfinalized based on status
     conn.execute(
         """
         UPDATE coaches
-        SET finalized = 1,
-            budget = ?
+        SET finalized = ?
         WHERE discordid = ?
         """,
-        (remaining_budget, userid)
+        (status, userid)
     )
     conn.commit()
     conn.close()

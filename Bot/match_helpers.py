@@ -25,11 +25,12 @@ def insert_match(winner, loser, week, margin, replay):
             """,
             (winner, loser, margin, week, replay)
         )
-        # update the kill differential for each coach based on the margin
+        # update the kill differential and win/loss for each coach
         conn.execute(
             """     
             UPDATE coaches
-            SET netkd = netkd + ?
+                SET netkd = netkd + ?,
+                    wins = wins + 1
             WHERE discordid = ?
             """,
             (margin, winner)
@@ -37,7 +38,8 @@ def insert_match(winner, loser, week, margin, replay):
         conn.execute(
             """     
             UPDATE coaches
-            SET netkd = netkd - ?
+                SET netkd = netkd - ?,
+                    losses = losses + 1
             WHERE discordid = ?
             """,
             (margin, loser)
@@ -77,11 +79,12 @@ def remove_match(matchid):
     # set the margin to 3 if the match is a forfeit loss (indicated by -1 record)
     if margin == -1:
         margin = 3
-    # revert the kill differential for each coach
+    # revert the kill differential and win/loss for each coach
     conn.execute(
         """     
         UPDATE coaches
-        SET netkd = netkd + ?
+            SET netkd = netkd + ?,
+                losses = losses - 1
         WHERE discordid = ?
         """,
         (margin, match_data[1])
@@ -89,7 +92,8 @@ def remove_match(matchid):
     conn.execute(
         """     
         UPDATE coaches
-        SET netkd = netkd - ?
+            SET netkd = netkd - ?,
+                wins = wins - 1
         WHERE discordid = ?
         """,
         (margin, match_data[0])
@@ -104,7 +108,7 @@ def get_history(week):
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT winner, loser, record, mweek, replay
+        SELECT matchid, winner, loser, record, replay
         FROM matches
         WHERE mweek = ?
         """,

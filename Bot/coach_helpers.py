@@ -49,11 +49,6 @@ def insert_coach(userid, username):
         conn.close()
 
 
-def bulk_insert(users):
-    """Insert the users with the specified userids into the coaches table."""
-    # TODO
-
-
 def replace_coach(userid1, userid2, username2):
     """Replace an existing coach with a new coach."""
     conn = get_db()
@@ -77,12 +72,12 @@ def replace_coach(userid1, userid2, username2):
         conn.close()
 
 
-async def get_leaderboard():
+def get_leaderboard():
     """Return all current coaches."""
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT discordid
+        SELECT discordid, wins, losses, netkd
         FROM coaches
         ORDER BY wins DESC, netkd DESC
         """
@@ -92,9 +87,8 @@ async def get_leaderboard():
     return coach_ranking
 
 
-async def get_info(userid):
+def get_info(userid):
     """Return the information of a coach with userid."""
-    # TODO: (pokemon, round drafted, remaining budget), (match record, net kd, upcoming opponent) and comment
     conn = get_db()
     if verify_coach(userid) == 0:
         cur = conn.execute(
@@ -107,8 +101,15 @@ async def get_info(userid):
             (userid, )
         )
         draft_data = cur.fetchall()
+        cur = conn.execute(
+            """
+            SELECT skipped, transactions
+            FROM coaches
+            WHERE coachid = ?
+            """,
+            (userid, )
+        )
+        user_data = cur.fetchone()
         conn.close()
-        if len(draft_data) > 0:
-            return draft_data
-        return 1
-    return 2
+        return draft_data, user_data
+    return 1, user_data

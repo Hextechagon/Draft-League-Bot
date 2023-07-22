@@ -7,6 +7,7 @@
 import discord
 from discord.ext import commands
 from coach_helpers import insert_coach, replace_coach, get_leaderboard, get_info
+from draft_helpers import edit_skipped
 from db_conn import check_channel
 
 
@@ -27,7 +28,7 @@ class Coach(commands.Cog):
             status = insert_coach(user.id, user.display_name)
             if status == 0:
                 await ctx.send(f':white_check_mark: {user.display_name} has'
-                            ' been registered as a coach.')
+                               ' been registered as a coach.')
             elif status == 1:
                 await ctx.send(':x: The draft league is full.')
                 return
@@ -41,17 +42,16 @@ class Coach(commands.Cog):
         """Replace a current coach with the specified server member (inherits previous data)."""
         status = replace_coach(user1.id, user2.id, user2.display_name)
         if status == 0:
-            # update the draft_queue with the new coach if the draft process is active
-            if self.draft_cog.draft_round > 0:
-                # need fix: clear queued picks!!!
-                coach_info = self.draft_cog.skipped_coaches.get(user1.id)
-                # update the old discordid in draft_queue and skipped_coaches with the new one
-                self.draft_cog.draft_queue[coach_info[2]][0] = user2.id
-                retained_info = self.draft_cog.skipped_coaches.pop(
-                    user1.id)
-                self.draft_cog.skipped_coaches[user2.id] = retained_info
-                # reset the draft time penalty for skipping
-                self.draft_cog.skipped_coaches[user2.id][0] = 0
+            # update the draft_queue with the new coach
+            coach_info = self.draft_cog.skipped_coaches.get(user1.id)
+            # update the old discordid in draft_queue and skipped_coaches with the new one
+            self.draft_cog.draft_queue[coach_info[2]][0] = user2.id
+            retained_info = self.draft_cog.skipped_coaches.pop(
+                user1.id)
+            self.draft_cog.skipped_coaches[user2.id] = retained_info
+            # reset the draft time penalty for skipping
+            self.draft_cog.skipped_coaches[user2.id][0] = 0
+            edit_skipped(user2.id, 0)
             await ctx.send(f':white_check_mark: {user1.display_name} has been replaced'
                            f' by {user2.display_name} as a coach.')
         elif status == 1:
@@ -63,7 +63,7 @@ class Coach(commands.Cog):
     @check_channel('coaches')
     async def ranking(self, ctx):
         """Display the leaderboard containing all current coaches."""
-        leaderboard = await get_leaderboard()
+        leaderboard = get_leaderboard()
         output = ''
         if len(leaderboard) == 0:
             output += 'There are no registered coaches.'
@@ -72,30 +72,30 @@ class Coach(commands.Cog):
             for rank, coach in enumerate(leaderboard, 1):
                 user = await self.bot.fetch_user(coach[0])
                 username = user.display_name
-                output += str(rank) + '. ' + username + '\n'
+                output += str(rank) + '. ' + username + \
+                    f': {coach[1]}-{coach[2]} ({coach[3]})\n'
             await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
 
     @commands.command()
     @check_channel('coaches')
     async def info(self, ctx, user: discord.Member):
-        """Display user information (pokemon, budget for now, update later)."""
-        coach_data = await get_info(user.id)
+        """Display user information for the specified coach."""
+        draft_data, coach_data = get_info(user.id)
         output = ''
-        if coach_data == 1:
-            # FIX: display more information (should still output budget)
-            output += f'{user.display_name} has not drafted yet.'
-            await ctx.send(':warning: ' + output)
-        elif coach_data == 2:
+        if draft_data == 1:
             output += f'{user.display_name} is not a valid coach.'
             await ctx.send(':x: ' + output)
         else:
-            budget = 125
-            for pokemon in coach_data:
+            if len(draft_data) == 0:
+                output += f'{user.display_name} has not drafted a pokemon yet.'
+            coach_info = self.draft_cog.skipped_coaches.get(user.id)
+            remaining_budget = self.draft_cog.draft_queue[coach_info[2]][1]
+            for pokemon in draft_data:
                 output += str(pokemon[0]) + '. ' + \
                     pokemon[1] + f' ({pokemon[2]})\n'
-                budget -= pokemon[2]
-            await ctx.send('```yaml\n[' + user.display_name + f'\'s Draft] : {budget}'
-                           ' points remaining\n' + output + '```')
+            await ctx.send('```yaml\n[' + user.display_name + ']\nRemaining Budget:'
+                           f'{remaining_budget} | Remaining Transactions: {coach_data[1]}'
+                           f' | # Times Skipped: {coach_data[0]}\n' + output + '```')
 
     @register.error
     @replace.error

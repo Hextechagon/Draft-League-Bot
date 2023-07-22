@@ -6,8 +6,8 @@
 !preselect TODO: non-essential
 !edit perv_pokemon new_pokemon
 !etime minutes
-!finish (<@user>) TODO
-!reenter <@user> TODO
+!finish (<@user>)
+!reenter <@user>
 !fadd pokemon_name TODO force add pokemon by hoster
 !fremove pokemon_name TODO force remove pokemon by hoster
 !eskipped <@user> amount
@@ -33,7 +33,7 @@ import discord
 import pytz
 from discord.ext import commands
 from draft_helpers import (
-    randomize_order, get_order, pick_pokemon, remove_pokemon, edit_pokemon, finalize, 
+    randomize_order, get_order, pick_pokemon, remove_pokemon, edit_pokemon, finalize,
     verify_pokemon, edit_skipped)
 from db_conn import check_channel
 
@@ -98,7 +98,7 @@ class Draft(commands.Cog):
         else:
             # display the order of the draft
             output = ''
-            for coach in await get_order():
+            for coach in get_order():
                 user = await self.bot.fetch_user(coach[1])
                 username = user.display_name
                 output += str(coach[0]) + '. ' + username + '\n'
@@ -160,7 +160,8 @@ class Draft(commands.Cog):
         while self.draft_queue[self.draft_position][2] is True and self.num_finalized < \
                 len(self.draft_queue):
             # ensure finalized coaches draft from round where they left off if they reenter
-            self.skipped_coaches[self.draft_queue[self.draft_position][0]][1].put(self.draft_round)
+            self.skipped_coaches[self.draft_queue[self.draft_position][0]][1].put(
+                self.draft_round)
             await self.get_next(ctx)
 
     @commands.command()
@@ -195,7 +196,7 @@ class Draft(commands.Cog):
         """Helper function for commands involving selection."""
         if skipped is False:
             # handle normal drafting
-            status, pname, remaining_points = pick_pokemon([pokemon], self.draft_round, 
+            status, pname, remaining_points = pick_pokemon([pokemon], self.draft_round,
                                                            ctx.author.id,
                                                            self.draft_queue[position][1])
         else:
@@ -253,7 +254,8 @@ class Draft(commands.Cog):
     async def delete(self, ctx, pokemon, position):
         """Helper function for commands involving removal."""
         coach_info = self.draft_queue[position]
-        status, pname, remaining_points = remove_pokemon([pokemon], coach_info[0], coach_info[1])
+        status, pname, remaining_points = remove_pokemon(
+            [pokemon], coach_info[0], coach_info[1])
         if status == 0:
             # update the coach's budget
             coach_info[1] = remaining_points
@@ -290,7 +292,8 @@ class Draft(commands.Cog):
                     # editable pick is not a wheel pick
                     editable_rounds.append(self.draft_round)
         # verify the prev_pokemon was drafted in a round that is currently eligible for replacement
-        verify_status, pokemon_info, _ = verify_pokemon(prev_pokemon, editable_rounds)
+        verify_status, pokemon_info, _ = verify_pokemon(
+            prev_pokemon, editable_rounds)
         if verify_status == 0:
             delete_status = await self.delete(ctx, [prev_pokemon], coach_info[2])
             if delete_status == 0:
@@ -326,15 +329,19 @@ class Draft(commands.Cog):
     @check_channel('draft-mons')
     async def finish(self, ctx, user: discord.Member = None):
         """Specify that a coach completed the drafting phase."""
-        # TODO: add force finish logic
-        coach_info = self.skipped_coaches.get(ctx.author.id)
+        # enable draft hosts to assign finished status to coaches
+        if user is not None and discord.utils.get(ctx.author.roles, name="Draft Host"):
+            target_userid = user.id
+        else:
+            target_userid = ctx.author.id
+        coach_info = self.skipped_coaches.get(target_userid)
         if coach_info is not None and self.draft_queue[coach_info[2]][2] is False:
-            finalize(ctx.author.id, self.draft_queue[self.draft_position][1])
+            finalize(target_userid, 1)
             # set the coach's finalized status in draft_queue as true
             self.draft_queue[coach_info[2]][2] = True
-            user = await self.bot.fetch_user(ctx.author.id)
+            user = await self.bot.fetch_user(target_userid)
             username = user.display_name
-            await ctx.send(f':white_check_mark: {username} has finished drafting.')
+            await ctx.send(f':white_check_mark: {username} has completed drafting.')
             self.num_finalized += 1
             if coach_info[2] == self.draft_position:
                 # stop draft timer if user is the coach in the current draft_position
@@ -348,6 +355,17 @@ class Draft(commands.Cog):
     async def reenter(self, ctx, user: discord.Member):
         """Re-enter a finalized coach into the draft."""
         # make sure update database too
+        coach_info = self.skipped_coaches.get(user.id)
+        if coach_info is not None and self.draft_queue[coach_info[2]][2] is True:
+            finalize(user.id, 0)
+            # set the coach's finalized status in draft_queue as false
+            self.draft_queue[coach_info[2]][2] = False
+            user = await self.bot.fetch_user(user.id)
+            username = user.display_name
+            await ctx.send(f':white_check_mark: {username} has resumed drafting.')
+            self.num_finalized -= 1
+        else:
+            await ctx.send(':x: You are not a valid coach or not finalized.')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -470,7 +488,6 @@ class Draft(commands.Cog):
         - ***for the current round, don't add to queue if the draft position has not yet passed the coach position (if odd_round: check if coach position >= 
         current draft position; if even_round: check if coach_position <= current draft position)
         """
-
 
     @randomize.error
     @order.error

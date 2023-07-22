@@ -19,7 +19,7 @@ class Match(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('replays')
-    async def record(self, ctx, week: int, winner: discord.Member, loser: discord.Member, margin, replay = None):
+    async def record(self, ctx, week: int, winner: discord.Member, loser: discord.Member, margin, replay=None):
         """Record the outcome of a match (enter -1 for margin if forfeit win/loss)."""
         if winner == loser:
             await ctx.send(':x: Please specify two different coaches.')
@@ -49,8 +49,25 @@ class Match(commands.Cog):
     @check_channel('coaches')
     async def mhistory(self, ctx, week: int):
         """Display the match history for a particular week."""
-        # TODO: coach1 won agaist coach2 (3-0): replay_link/no_replay
-        # do not print none (deleting match does not move autoincrement up)
+        matches = get_history(week)
+        output = ''
+        if len(matches) == 0:
+            output += 'There are no matches recorded for the specified week.'
+            await ctx.send(':x: ' + output)
+        else:
+            for match in matches:
+                matchid = match[0]
+                winner = await self.bot.fetch_user(match[1]).display_name
+                loser = await self.bot.fetch_user(match[2]).display_name
+                record = match[3]
+                if record == -1:
+                    record = 'Forfeit Win'
+                replay = match[4]
+                if replay is None:
+                    replay = 'No Replay'
+                output += str(matchid) + '. ' + winner + ' won against ' + \
+                    loser + f' ({record} - 0): ' + replay
+            await ctx.send(f'[Week {week}]\n' + output)
 
     @record.error
     @rrecord.error

@@ -10,7 +10,6 @@ CREATE TABLE coaches(
     losses INTEGER NOT NULL DEFAULT 0,
     netkd INTEGER NOT NULL DEFAULT 0,
     finalized BOOLEAN NOT NULL DEFAULT 0,
-    budget INTEGER,
     dorder INTEGER,
     skipped INTEGER NOT NULL DEFAULT 0,
     transactions INTEGER NOT NULL DEFAULT 3
