@@ -17,7 +17,7 @@
 !removet tradeid TODO
 !accept tradeid TODO
 !trequests TODO
-!status pokemon TODO
+!status pokemon
 !resume TODO
 
 Notes: 

@@ -117,3 +117,19 @@ def get_history(week):
     matches = cur.fetchall()
     conn.close()
     return matches
+
+
+def coach_history(userid):
+    """Return the match history for the coach with the specified discordid."""
+    conn = get_db()
+    cur = conn.execute(
+        """
+        SELECT matchid, winner, loser, record, replay
+        FROM matches
+        WHERE winner = ? OR loser = ?
+        """,
+        (userid, userid)
+    )
+    matches = cur.fetchall()
+    conn.close()
+    return matches

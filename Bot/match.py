@@ -49,6 +49,7 @@ class Match(commands.Cog):
     @check_channel('coaches')
     async def mhistory(self, ctx, week: int):
         """Display the match history for a particular week."""
+        # CHANGE THIS TO HAVE OPTION TO DISPLAY HISTORY FOR A USER (USE W AND L EMOTES)
         matches = get_history(week)
         output = ''
         if len(matches) == 0:

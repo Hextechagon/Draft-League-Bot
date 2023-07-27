@@ -108,7 +108,6 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
         formatted_names.append(formatted_name)
     conn.commit()
     conn.close()
-    # return 0, remaining budget, and a list with formatted names
     return 0, formatted_names, coach_budget
 
 
@@ -190,3 +189,23 @@ def edit_skipped(userid, amount):
     )
     conn.commit()
     conn.close()
+
+
+def create_request(requester, requestee, offered_mon, desired_mon):
+    """Insert the specified trade request into the trades table."""
+
+
+
+def remove_request(tradeid):
+    """Remove the trade request with tradeid from the trades table."""
+
+
+
+def accept_trade(tradeid):
+    """Swap the ownership of pokemon specified by the tradeid."""
+
+
+
+def get_requests(userid):
+    """Return all trade requests received by the coach with the specified userid."""
+    
