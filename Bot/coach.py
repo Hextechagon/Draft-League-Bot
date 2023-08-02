@@ -100,6 +100,7 @@ class Coach(commands.Cog):
     @register.error
     @replace.error
     @info.error
+    @ranking.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

@@ -45,8 +45,8 @@ CREATE TABLE trades(
     tradeid INTEGER PRIMARY KEY,
     p1name VARCHAR(50),
     p2name VARCHAR(50),
-    coach1 INTEGER,
-    coach2 INTEGER,
+    requester INTEGER,
+    requestee INTEGER,
     CHECK (coach1 != coach2),
     FOREIGN KEY(p1name) REFERENCES pokemon(pname)
     ON UPDATE CASCADE

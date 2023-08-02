@@ -18,6 +18,7 @@
 !accept tradeid TODO
 !trequests TODO
 !status pokemon
+!grace TODO
 !resume TODO
 
 Notes: 
@@ -34,7 +35,7 @@ import pytz
 from discord.ext import commands
 from draft_helpers import (
     randomize_order, get_order, pick_pokemon, remove_pokemon, edit_pokemon, finalize,
-    verify_pokemon, edit_skipped)
+    verify_pokemon, edit_skipped, create_request, remove_request, accept_trade, get_requests)
 from db_conn import check_channel
 
 
@@ -88,7 +89,6 @@ class Draft(commands.Cog):
             self.draft_round += 1
 
     @commands.command()
-    @commands.has_role('Draft League')
     @check_channel('coaches')
     async def order(self, ctx):
         """Display the draft order list."""
@@ -189,7 +189,7 @@ class Draft(commands.Cog):
                                                              [self.draft_position][0]][0])
             await self.start_timer(ctx, datetime.datetime.now(), duration)
             await asyncio.sleep(4)
-        # put a message with more information (e.g. FA began and number of trades)
+        self.draft_round = -2
         await ctx.send('The draft has ended.')
 
     async def acquire(self, ctx, pokemon, skipped, position, round_skipped=0):
@@ -399,7 +399,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft Host')
-    @check_channel('draft-mons')
+    @check_channel('coaches')
     async def eskipped(self, ctx, user: discord.Member, amount: int):
         """Modify the number of times a coach has been skipped for timer calculation purposes."""
         coach_info = self.skipped_coaches.get(user.id)
@@ -438,12 +438,6 @@ class Draft(commands.Cog):
         """Send a trade request to another coach."""
         # TODO: see comment above (ONLY available after drafting finished)
         # recommend do remove before add to make sure budget not exceeded, detect reaction for confirmation?
-        """
-        trading (decide return detailed error messages or general - be consistent with other commands):
-        - remove 2 mons, and add 2 mons to the proper new owners (save old mons' round number to insert valid round)
-        - possible error messages (see if covered by similar functions too): not free agency yet? (check if can trade before FA), first or second user is not a coach, 
-        first or second coach not enough budget to acquire traded mon, the specified mons do not belong to the respective users
-        """
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -461,7 +455,7 @@ class Draft(commands.Cog):
 
     @commands.command()
     @commands.has_role('Draft League')
-    @check_channel('draft-mons')
+    @check_channel('coaches')
     async def trequests(self, ctx):
         """Display a list of all incoming trade requests."""
         # TODO:
@@ -469,25 +463,31 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('draft-mons')
+    async def grace(self, ctx):
+        """Initiate the grace period."""
+        if self.draft_round == -2:
+            current_time = datetime.datetime.now()
+            grace_end = current_time + datetime.timedelta(hours=24)
+            timezone = pytz.timezone('US/Eastern')
+            converted_time = grace_end.astimezone(timezone).strftime('%Y-%m-%d %H:%M')
+            ctx.send(f'A 24-hour grace period begins now (ends tomorrow at {converted_time}),'
+                     ' during which you can make unlimited transactions. After that, you have 3'
+                     ' transactions and unlimited trades.')
+            while current_time < grace_end:
+                await asyncio.sleep(4)
+                current_time = datetime.datetime.now()
+            self.draft_round = -3
+            await ctx.send('The grace period has ended. You have 3 transactions and unlimited'
+                           ' trades during the season.')
+        else:
+            await ctx.send(':x: You cannot use this command at the current stage.')
+
+    @commands.command()
+    @commands.has_role('Draft Host')
+    @check_channel('draft-mons')
     async def resume(self, ctx):
         """Resume the bot processes after updates."""
-        # TODO think about what arguments and separate for draft or take extra argument?
-        """get number of times skipped from skipped in database and add round to skipped queue 
-           if coach has not drafted a pokemon in the round (in the current round, add if the coach
-           did not have a chance to draft yet - draft position not yet passed coach position in round).
-           This makes sure that if a coach finalizes and reenters, their draft will start at round 
-           where they left off.
-
-        restore draft_queue: [id, budget, finalized]
-        - get id and finalized order by dorder from coaches table
-        - for every coach, find the total budget used on all drafted mons and subtract it from the maximum budget (in same loop as populating draft_queue)
-
-        restore skipped_coaches (in same loop as populating draft_queue, make sure do this in initial filling too): id: num_skipped skipped_rounds_queue draft_position
-        - fill in num_skipped and draft_position using query result from draft_queue restoration (add skipped number to select)
-        - loop from first round to current round and add round to skipped_rounds_queue if no mon is drafted for the round***
-        - ***for the current round, don't add to queue if the draft position has not yet passed the coach position (if odd_round: check if coach position >= 
-        current draft position; if even_round: check if coach_position <= current draft position)
-        """
+        # TODO
 
     @randomize.error
     @order.error
@@ -508,6 +508,7 @@ class Draft(commands.Cog):
     @trequests.error
     @resume.error
     @status.error
+    @grace.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

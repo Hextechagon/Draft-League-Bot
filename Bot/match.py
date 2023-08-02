@@ -1,11 +1,12 @@
 """Commands for matches.
 !record <@winner> <@loser> margin replay TODO: double ff loss (non essential)
 !rrecord matchid TODO double ff loss (non essential)
-!mhistory week TODO show match id (show ff loss too)
+!mhistory week
+!chistory <@coach>
 """
 import discord
 from discord.ext import commands
-from match_helpers import insert_match, remove_match, get_history
+from match_helpers import insert_match, remove_match, get_history, coach_history
 from db_conn import check_channel
 
 
@@ -45,11 +46,9 @@ class Match(commands.Cog):
             await ctx.send(':x: Please specify a valid match ID.')
 
     @commands.command()
-    @commands.has_role('Draft League')
     @check_channel('coaches')
     async def mhistory(self, ctx, week: int):
         """Display the match history for a particular week."""
-        # CHANGE THIS TO HAVE OPTION TO DISPLAY HISTORY FOR A USER (USE W AND L EMOTES)
         matches = get_history(week)
         output = ''
         if len(matches) == 0:
@@ -61,18 +60,53 @@ class Match(commands.Cog):
                 winner = await self.bot.fetch_user(match[1]).display_name
                 loser = await self.bot.fetch_user(match[2]).display_name
                 record = match[3]
+                replay = match[4]
                 if record == -1:
                     record = 'Forfeit Win'
-                replay = match[4]
                 if replay is None:
                     replay = 'No Replay'
                 output += str(matchid) + '. ' + winner + ' won against ' + \
                     loser + f' ({record} - 0): ' + replay
             await ctx.send(f'[Week {week}]\n' + output)
 
+    @commands.command()
+    @check_channel('coaches')
+    async def chistory(self, ctx, user: discord.Member):
+        """Display the match history for a particular coach."""
+        matches = coach_history(user.id)
+        output = ''
+        if len(matches) == 0:
+            output += 'There are no matches recorded for the specified coach.'
+            await ctx.send(':x: ' + output)
+        else:
+            result = None
+            for match in matches:
+                matchid = match[0]
+                winner = await self.bot.fetch_user(match[1]).display_name
+                loser = await self.bot.fetch_user(match[2]).display_name
+                record = match[3]
+                replay = match[4]
+                week = match[5]
+                if replay is None:
+                    replay = 'No Replay'
+                if match[1] == user.id:
+                    result = ':regional_indicator_w:'
+                    if record == -1:
+                        record = 'Forfeit Win'
+                    output += str(week) + f' ({matchid}). {result} ' + winner + ' won against ' + \
+                        loser + f' ({record} - 0): ' + replay
+                else:
+                    result = ':regional_indicator_l:'
+                    if record == -1:
+                        record = 'Forfeit Loss'
+                    output += str(week) + f' ({matchid}). {result} ' + loser + ' lost against ' + \
+                        winner + f' (0 - {record}): ' + replay
+            await ctx.send(f'[{user.display_name} Match History]\n' + output)
+
     @record.error
     @rrecord.error
     @mhistory.error
+    @chistory.error
     async def error_handler(self, ctx, error):
         """Respond to discord.py errors."""
         if isinstance(error, commands.MissingRole):

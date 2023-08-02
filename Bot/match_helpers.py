@@ -111,6 +111,7 @@ def get_history(week):
         SELECT matchid, winner, loser, record, replay
         FROM matches
         WHERE mweek = ?
+        ORDER BY matchid
         """,
         (week, )
     )
@@ -124,9 +125,10 @@ def coach_history(userid):
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT matchid, winner, loser, record, replay
+        SELECT matchid, winner, loser, record, replay, mweek
         FROM matches
         WHERE winner = ? OR loser = ?
+        ORDER BY mweek
         """,
         (userid, userid)
     )

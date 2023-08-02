@@ -78,10 +78,10 @@ def verify_pokemon(pokemon, rounds):
 
 def pick_pokemon(pokemon, draft_round, userid, coach_budget):
     """Associate the specified pokemon with the coach who drafted it."""
+    conn = get_db()
     formatted_names = []
     for mon in pokemon:
         _, pokemon_info, formatted_name = verify_pokemon(mon, [])
-        conn = get_db()
         # check if the specified name is a valid pokemon
         if pokemon_info is None:
             conn.close()
@@ -114,10 +114,10 @@ def pick_pokemon(pokemon, draft_round, userid, coach_budget):
 def remove_pokemon(pokemon, userid, coach_budget):
     """Delete the specified pokemon from the coach's team."""
     # MAYBE HAVE TO RETURN ROUND HERE
+    conn = get_db()
     formatted_names = []
     for mon in pokemon:
         _, pokemon_info, formatted_name = verify_pokemon(mon, [])
-        conn = get_db()
         # check if the specified name is a valid pokemon
         if pokemon_info is None:
             conn.close()
@@ -191,21 +191,75 @@ def edit_skipped(userid, amount):
     conn.close()
 
 
+def verify_tradeid(tradeid):
+    """Check if the specified trade ID is valid."""
+    conn = get_db()
+    cur = conn.execute(
+        """
+        SELECT tradeid
+        FROM trades
+        WHERE tradeid = ?
+        """,
+        (tradeid, )
+    )
+    trade = cur.fetchone()
+    conn.close()
+    if trade is not None:
+        return 0
+    return 1
+
+
 def create_request(requester, requestee, offered_mon, desired_mon):
     """Insert the specified trade request into the trades table."""
-
+    conn = get_db()
+    # check if offered mon and desired mon (or switched) already in table
+    # also check budget
 
 
 def remove_request(tradeid):
     """Remove the trade request with tradeid from the trades table."""
-
+    conn = get_db()
+    if verify_tradeid(tradeid) != 0:
+        conn.close()
+        return 1
+    conn.execute(
+        """
+        DELETE FROM trades
+        WHERE tradeid = ?
+        """,
+        (tradeid, )
+    )
+    conn.commit()
+    conn.close()
+    return 0
 
 
 def accept_trade(tradeid):
     """Swap the ownership of pokemon specified by the tradeid."""
-
+    # return pokemon names, put in proper rounds; TODO!!!
+    conn = get_db()
+    if verify_tradeid(tradeid) != 0:
+        conn.close()
+        return 1
+    cur = conn.execute(
+        """
+        
+        """,
+        (tradeid, )
+    )
 
 
 def get_requests(userid):
     """Return all trade requests received by the coach with the specified userid."""
-    
+    conn = get_db()
+    cur = conn.execute(
+        """
+        SELECT tradeid, p1name, p2name, requester, requestee
+        FROM trades
+        WHERE requestee = ?
+        """,
+        (userid, )
+    )
+    requests = cur.fetchall()
+    conn.close()
+    return requests
