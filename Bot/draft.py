@@ -16,16 +16,17 @@
 !trade <@user> pokemon1 pokemon2 TODO
 !removet tradeid TODO
 !accept tradeid TODO
-!trequests TODO
+!trequests
 !status pokemon
-!grace TODO
+!grace
 !resume TODO
 
 Notes: 
 - pokemon_list consists of pokemon names separated by one space
 - replace the space(s) with a ! if a pokemon name consists of multiple words
-- if someone the coach entrusted drafted for him/her within the draft duration and the hoster did not fadd it 
-before the draft deadline, the hoster has to use !eskipped to correct the time penalty associated with # skips
+- if someone a coach left picks with drafted for the coach within the draft duration and the hoster
+did not fadd the pick(s) before the draft deadline, the hoster has to use !eskipped to correct the
+time penalty associated with # skips after fadd
 """
 import datetime
 import asyncio
@@ -196,17 +197,17 @@ class Draft(commands.Cog):
         """Helper function for commands involving selection."""
         if skipped is False:
             # handle normal drafting
-            status, pname, remaining_points = pick_pokemon([pokemon], self.draft_round,
+            status, pname, remaining_budget = pick_pokemon([pokemon], self.draft_round,
                                                            ctx.author.id,
                                                            self.draft_queue[position][1])
         else:
             # handle skipped coach drafting
-            status, pname, remaining_points = pick_pokemon([pokemon], round_skipped, ctx.author.id,
+            status, pname, remaining_budget = pick_pokemon([pokemon], round_skipped, ctx.author.id,
                                                            self.draft_queue[position][1])
         if status == 0:
-            self.draft_queue[position][1] = remaining_points
+            self.draft_queue[position][1] = remaining_budget
             await ctx.send(f':white_check_mark: {pname} has been added to your draft; you have'
-                           f' {remaining_points} points left.')
+                           f' {remaining_budget} points left.')
             if skipped is False:
                 # end the timer if the selection is not from a skipped coach
                 self.drafted = True
@@ -370,17 +371,33 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('draft-mons')
-    async def fadd(self, ctx, pokemon):
+    async def fadd(self, ctx, user: discord.Member, pokemon, round):
         """Force add the specified pokemon to the coach's party during draft."""
-        # TODO: see comment above
         # recommend do remove before add to make sure budget not exceeded
+        coach_info = self.skipped_coaches.get(user.id)
+        if coach_info is not None:
+            fadd_status, pname, remaining_budget = pick_pokemon(pokemon, round, user.id, self.draft_queue[coach_info[2]][1])
+            if fadd_status == 0:
+                await ctx.send(':white_check_mark:')
+            else:
+                await ctx.send(':x:')
+        else:
+            await ctx.send('x: Please specify a valid coach.')
 
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('draft-mons')
-    async def fremove(self, ctx, pokemon):
+    async def fremove(self, ctx, user: discord.Member, pokemon):
         """Force remove the specified pokemon from the coach's party during draft."""
-        # TODO: see comment above
+        coach_info = self.skipped_coaches.get(user.id)
+        if coach_info is not None:
+            fremove_status, pname, remaining_budget = remove_pokemon(pokemon, user.id, self.draft_queue[coach_info[2]][1])
+            if fremove_status == 0:
+                await ctx.send(':white_check_mark:')
+            else:
+                await ctx.send(':x:')
+        else:
+            await ctx.send('x: Please specify a valid coach.')
 
     @commands.command()
     @commands.has_role('Draft League')
@@ -458,7 +475,18 @@ class Draft(commands.Cog):
     @check_channel('coaches')
     async def trequests(self, ctx):
         """Display a list of all incoming trade requests."""
-        # TODO:
+        requests = get_requests(ctx.author.id)
+        output = ''
+        if len(requests) == 0:
+            output += 'You have no incoming trade requests.'
+            await ctx.send(':x: ' + output)
+        else:
+            for request in requests:
+                requester = await self.bot.fetch_user(request[3])
+                username = requester.display_name
+                output += str(request[0]) + '. ' + username + \
+                    f': {request[1]} <-> {request[2]}\n'
+            await ctx.send('```yaml\n' + '[Leaderboard]\n' + output + '```')
 
     @commands.command()
     @commands.has_role('Draft Host')

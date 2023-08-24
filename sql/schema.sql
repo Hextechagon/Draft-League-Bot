@@ -42,9 +42,9 @@ CREATE TABLE matches(
 );
 
 CREATE TABLE trades(
-    tradeid INTEGER PRIMARY KEY,
-    p1name VARCHAR(50),
-    p2name VARCHAR(50),
+    tradeid INTEGER PRIMARY KEY AUTOINCREMENT,
+    omon VARCHAR(50),
+    dmon VARCHAR(50),
     requester INTEGER,
     requestee INTEGER,
     CHECK (coach1 != coach2),

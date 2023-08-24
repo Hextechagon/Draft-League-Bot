@@ -196,7 +196,7 @@ def verify_tradeid(tradeid):
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT tradeid
+        SELECT tradeid, omon, dmon, requester, requestee
         FROM trades
         WHERE tradeid = ?
         """,
@@ -205,21 +205,31 @@ def verify_tradeid(tradeid):
     trade = cur.fetchone()
     conn.close()
     if trade is not None:
-        return 0
-    return 1
+        return 0, trade
+    return 1, None
 
 
-def create_request(requester, requestee, offered_mon, desired_mon):
+def create_request(requester, requestee, offered_mon, desired_mon, rr_budget, re_budget):
     """Insert the specified trade request into the trades table."""
     conn = get_db()
-    # check if offered mon and desired mon (or switched) already in table
-    # also check budget
+    # check if offered mon and desired mon (or switched) already in table (both sides) and valid
+    # also check budget (both coaches)
+    conn.execute(
+        """
+        INSERT INTO coaches(omon, dmon, requester, requestee)
+        VALUES (?, ?, ?, ?)
+        """,
+        (offered_mon, desired_mon, requester, requestee)
+    )
+    conn.commit()
+    conn.close()
 
 
 def remove_request(tradeid):
     """Remove the trade request with tradeid from the trades table."""
     conn = get_db()
-    if verify_tradeid(tradeid) != 0:
+    verify_status, _ = verify_tradeid(tradeid)
+    if verify_status != 0:
         conn.close()
         return 1
     conn.execute(
@@ -234,16 +244,19 @@ def remove_request(tradeid):
     return 0
 
 
-def accept_trade(tradeid):
+def accept_trade(tradeid, requester_budget, requestee_budget):
     """Swap the ownership of pokemon specified by the tradeid."""
-    # return pokemon names, put in proper rounds; TODO!!!
     conn = get_db()
-    if verify_tradeid(tradeid) != 0:
+    verify_status, trade_info = verify_tradeid(tradeid)
+    if verify_status != 0:
         conn.close()
         return 1
+    # swap coach id and round (get round and cost from pokemon), update and return budget
     cur = conn.execute(
         """
-        
+        UPDATE coaches
+        SET dorder = ?
+        WHERE discordid = ?
         """,
         (tradeid, )
     )
@@ -254,7 +267,7 @@ def get_requests(userid):
     conn = get_db()
     cur = conn.execute(
         """
-        SELECT tradeid, p1name, p2name, requester, requestee
+        SELECT tradeid, p1name, p2name, requester
         FROM trades
         WHERE requestee = ?
         """,
