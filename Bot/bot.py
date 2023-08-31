@@ -70,7 +70,7 @@ async def guide(ctx):
 
 
 @log.error
-async def error_handler(self, ctx, error):
+async def error_handler(ctx, error):
     """Respond to discord.py errors."""
     if isinstance(error, commands.MissingRole):
         await ctx.send(':x: You do not have permission to use this command.')

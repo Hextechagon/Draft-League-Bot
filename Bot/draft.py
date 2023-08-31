@@ -371,12 +371,13 @@ class Draft(commands.Cog):
     @commands.command()
     @commands.has_role('Draft Host')
     @check_channel('draft-mons')
-    async def fadd(self, ctx, user: discord.Member, pokemon, round):
+    async def fadd(self, ctx, user: discord.Member, pokemon, dround):
         """Force add the specified pokemon to the coach's party during draft."""
         # recommend do remove before add to make sure budget not exceeded
         coach_info = self.skipped_coaches.get(user.id)
         if coach_info is not None:
-            fadd_status, pname, remaining_budget = pick_pokemon(pokemon, round, user.id, self.draft_queue[coach_info[2]][1])
+            fadd_status, pname, remaining_budget = pick_pokemon(pokemon, dround, user.id,
+                                                                self.draft_queue[coach_info[2]][1])
             if fadd_status == 0:
                 await ctx.send(':white_check_mark:')
             else:
@@ -404,15 +405,32 @@ class Draft(commands.Cog):
     @check_channel('draft-mons')
     async def add(self, ctx, *pokemon):
         """Add the specified pokemon to the coach's party during FA."""
-        # TODO: see comment above (ONLY available after drafting finished)
-        # recommend do remove before add to make sure budget not exceeded
+        coach_info = self.skipped_coaches.get(ctx.author.id)
+        if coach_info is None:
+            await ctx.send(':x: You do not have permission to use this command.')
+        else:
+            add_status = pick_pokemon(pokemon, self.draft_round, ctx.author.id,
+                                      self.draft_queue[coach_info[2]][1])
+            if add_status == 0:
+                await ctx.send(':white_check_mark: The pokemon you specified have been'
+                               ' added to your team.')
+            else:
+                await ctx.send(':x: There is an error in processing your change request.')
 
     @commands.command()
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
     async def remove(self, ctx, *pokemon):
         """Remove the specified pokemon from the coach's party during FA."""
-        # TODO: see comment above (ONLY available after drafting finished)
+        coach_info = self.skipped_coaches.get(ctx.author.id)
+        if coach_info is None:
+            await ctx.send(':x: You do not have permission to use this command.')
+        else:
+            remove_status = remove_pokemon(pokemon, ctx.author.id,
+                                           self.draft_queue[coach_info[2]][1])
+            if remove_status == 0:
+                await ctx.send(':white_check_mark: The pokemon you specified have been'
+                               ' removed from your team.')
 
     @commands.command()
     @commands.has_role('Draft Host')
@@ -453,22 +471,40 @@ class Draft(commands.Cog):
     @check_channel('draft-mons')
     async def trade(self, ctx, user: discord.Member, pokemon1, pokemon2):
         """Send a trade request to another coach."""
-        # TODO: see comment above (ONLY available after drafting finished)
-        # recommend do remove before add to make sure budget not exceeded, detect reaction for confirmation?
+        requester_info = self.skipped_coaches.get(ctx.author.id)
+        requestee_info = self.skipped_coaches.get(user.id)
+        if requester_info is None or requester_info is None:
+            await ctx.send('x: Please specify a valid coach.')
+        else:
+            trade_status = create_request(ctx.author.id, user, pokemon1, pokemon2,
+                                          self.draft_queue[requester_info[2]][1],
+                                          self.draft_queue[requestee_info[2]][1])
+            if trade_status == 0:
+                await ctx.send(':white_check_mark: The trade request has been sent successfully.')
+            else:
+                await ctx.send(':x: There is an error in your trade request.')
 
     @commands.command()
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
-    async def removet(self, ctx, tradid):
+    async def removet(self, ctx, tradeid):
         """Withdraw a trade request sent to another coach."""
-        # TODO
+        remove_status = remove_request(tradeid)
+        if remove_status == 0:
+            await ctx.send(f':white_check_mark: The trade request with ID {tradeid} is removed.')
+        else:
+            await ctx.send(':x: Please specify a valid trade ID.')
 
     @commands.command()
     @commands.has_role('Draft League')
     @check_channel('draft-mons')
-    async def accept(self, ctx, tradid):
+    async def accept(self, ctx, tradeid):
         """Accept an incoming trade request."""
-        # TODO:
+        accept_status = accept_trade(tradeid)
+        if accept_status == 0:
+            await ctx.send(f':white_check_mark: The trade request with ID {tradeid} is accepted.')
+        else:
+            await ctx.send(':x: Please specify a valid trade ID.')
 
     @commands.command()
     @commands.has_role('Draft League')

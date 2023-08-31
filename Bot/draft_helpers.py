@@ -223,6 +223,7 @@ def create_request(requester, requestee, offered_mon, desired_mon, rr_budget, re
     )
     conn.commit()
     conn.close()
+    return 0
 
 
 def remove_request(tradeid):
@@ -244,7 +245,7 @@ def remove_request(tradeid):
     return 0
 
 
-def accept_trade(tradeid, requester_budget, requestee_budget):
+def accept_trade(tradeid):
     """Swap the ownership of pokemon specified by the tradeid."""
     conn = get_db()
     verify_status, trade_info = verify_tradeid(tradeid)

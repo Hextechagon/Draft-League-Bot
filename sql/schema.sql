@@ -47,17 +47,17 @@ CREATE TABLE trades(
     dmon VARCHAR(50),
     requester INTEGER,
     requestee INTEGER,
-    CHECK (coach1 != coach2),
-    FOREIGN KEY(p1name) REFERENCES pokemon(pname)
+    CHECK (requester != requestee),
+    FOREIGN KEY(omon) REFERENCES pokemon(pname)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-    FOREIGN KEY(p2name) REFERENCES pokemon(pname)
+    FOREIGN KEY(dmon) REFERENCES pokemon(pname)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-    FOREIGN KEY(coach1) REFERENCES coaches(discordid) 
+    FOREIGN KEY(requester) REFERENCES coaches(discordid) 
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-    FOREIGN KEY(coach2) REFERENCES coaches(discordid) 
+    FOREIGN KEY(requestee) REFERENCES coaches(discordid)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
